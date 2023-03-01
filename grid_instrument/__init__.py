@@ -1,1 +1,1 @@
-from grid_instrument import GridInstrument
+from .grid_instrument import GridInstrument
