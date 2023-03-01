@@ -1,2 +1,5 @@
 /__pycache__/*
 /lp/__pycache__/*
+/grid_instrument.egg-info/*
+/build/*
+/dist/*
