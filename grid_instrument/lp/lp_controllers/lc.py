@@ -1,9 +1,6 @@
 import sys
 import array
-from pygame import midi
-from pygame import time
-
-from .lcontrolxl import LaunchControlXL
+from .lc_xl import LaunchControlXL
 
 
 ########################################################################################
@@ -67,7 +64,7 @@ class LaunchControl( LaunchControlXL ):
 	#-- Does not check whether a device is in use or other, strange things...
 	#-- Uses search string "Control MIDI", by default.
 	#-------------------------------------------------------------------------------------
-	# Overrides "LaunchpadBase" method
+	# Overrides "controller_base" method
 	def Check( self, number = 0, name = "Control MIDI" ):
 		return super( LaunchControl, self ).Check( number = number, name = name )
 

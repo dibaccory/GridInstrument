@@ -1,16 +1,14 @@
 import sys
 import array
-from pygame import midi
-from pygame import time
-
-from ..launchpad import LaunchpadBase
+#import controller_base as controller_base
+from .controller_base import controller_base
 
 ########################################################################################
 ### CLASS Launchpad
 ###
 ### For 2-color Launchpads with 8x8 matrix and 2x8 top/right rows
 ########################################################################################
-class Launchpad( LaunchpadBase ):
+class Launchpad( controller_base ):
 
 	# LED AND BUTTON NUMBERS IN RAW MODE (DEC):
 	#

@@ -1,16 +1,13 @@
 import sys
 import array
-from pygame import midi
-from pygame import time
-
-from ..launchpad import LaunchpadBase
+from .controller_base import controller_base
 
 ########################################################################################
 ### CLASS LaunchKey
 ###
 ### For 2-color LaunchKey Keyboards 
 ########################################################################################
-class LaunchKeyMini( LaunchpadBase ):
+class LaunchKeyMini( controller_base ):
 
 	# LED, BUTTON, KEY AND POTENTIOMETER NUMBERS IN RAW MODE (DEC)
 	# NOTICE THAT THE OCTAVE BUTTONS SHIFT THE KEYS UP OR DOWN BY 12.
@@ -48,7 +45,7 @@ class LaunchKeyMini( LaunchpadBase ):
 	#-- Opens one of the attached LaunchKey devices.
 	#-- Uses search string "LaunchKey", by default.
 	#-------------------------------------------------------------------------------------
-	# Overrides "LaunchpadBase" method
+	# Overrides "controller_base" method
 	def Open( self, number = 0, name = "LaunchKey" ):
 		retval = super( LaunchKeyMini, self ).Open( number = number, name = name )
 		return retval
@@ -59,7 +56,7 @@ class LaunchKeyMini( LaunchpadBase ):
 	#-- Does not check whether a device is in use or other, strange things...
 	#-- Uses search string "LaunchKey", by default.
 	#-------------------------------------------------------------------------------------
-	# Overrides "LaunchpadBase" method
+	# Overrides "controller_base" method
 	def Check( self, number = 0, name = "LaunchKey" ):
 		return super( LaunchKeyMini, self ).Check( number = number, name = name )
 

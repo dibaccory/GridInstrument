@@ -1,16 +1,13 @@
 import sys
 import array
-from pygame import midi
-from pygame import time
-
-from ..launchpad import LaunchpadBase
+from .controller_base import controller_base
 
 ########################################################################################
 ### CLASS LaunchControlXL
 ###
 ### For 2-color Launch Control XL 
 ########################################################################################
-class LaunchControlXL( LaunchpadBase ):
+class LaunchControlXL( controller_base ):
 
 	# LED, BUTTON AND POTENTIOMETER NUMBERS IN RAW MODE (DEC)
 	#         
@@ -75,7 +72,7 @@ class LaunchControlXL( LaunchpadBase ):
 	#-- Opens one of the attached Control XL MIDI devices.
 	#-- Uses search string "Control XL", by default.
 	#-------------------------------------------------------------------------------------
-	# Overrides "LaunchpadBase" method
+	# Overrides "controller_base" method
 	def Open( self, number = 0, name = "Control XL", template = 1 ):
 
 		# The user template number adds to the MIDI commands.
@@ -103,7 +100,7 @@ class LaunchControlXL( LaunchpadBase ):
 	#-- Does not check whether a device is in use or other, strange things...
 	#-- Uses search string "Pro", by default.
 	#-------------------------------------------------------------------------------------
-	# Overrides "LaunchpadBase" method
+	# Overrides "controller_base" method
 	def Check( self, number = 0, name = "Control XL" ):
 		return super( LaunchControlXL, self ).Check( number = number, name = name )
 

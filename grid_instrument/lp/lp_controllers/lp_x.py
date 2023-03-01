@@ -1,9 +1,6 @@
 import sys
 import array
-from pygame import midi
-from pygame import time
-
-from .pro import LaunchpadPro
+from .lp_pro import LaunchpadPro
 
 ########################################################################################
 ### CLASS LaunchpadLPX
@@ -61,7 +58,7 @@ class LaunchpadLPX( LaunchpadPro ):
 	#-- Does not check whether a device is in use or other, strange things...
 	#-- See notes in "Open()" above.
 	#-------------------------------------------------------------------------------------
-	# Overrides "LaunchpadBase" method
+	# Overrides "controller_base" method
 	def Check( self, number = 0, name = "AUTO" ):
 		nameList = [ "Launchpad X", "LPX" ]
 		if name != "AUTO":

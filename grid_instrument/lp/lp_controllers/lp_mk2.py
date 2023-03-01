@@ -1,9 +1,12 @@
+import string
+import random
 import sys
 import array
+from ..charset import *
+from ..midi_handler import *
 from pygame import midi
 from pygame import time
-
-from .pro import LaunchpadPro
+from .lp_pro import LaunchpadPro
 
 
 ########################################################################################

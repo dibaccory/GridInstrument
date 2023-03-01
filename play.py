@@ -8,7 +8,7 @@
 # decided.ly / davehilowitz.com
 #
 
-from grid_instrument import *
+from grid_instrument import GridInstrument
 import rtmidi
 import time
 

@@ -1,9 +1,13 @@
+import string
+import random
 import sys
 import array
+from ..charset import *
+from ..midi_handler import *
 from pygame import midi
 from pygame import time
 
-from ..launchpad import LaunchpadBase
+from .controller_base import controller_base
 
 
 ########################################################################################
@@ -11,7 +15,7 @@ from ..launchpad import LaunchpadBase
 ###
 ### For 3-color "Pro" Launchpads with 8x8 matrix and 4x8 left/right/top/bottom rows
 ########################################################################################
-class LaunchpadPro( LaunchpadBase ):
+class LaunchpadPro( controller_base ):
 
 	# LED AND BUTTON NUMBERS IN RAW MODE (DEC)
 	# WITH LAUNCHPAD IN "LIVE MODE" (PRESS SETUP, top-left GREEN).
@@ -114,7 +118,7 @@ class LaunchpadPro( LaunchpadBase ):
 	#-- Opens one of the attached Launchpad MIDI devices.
 	#-- Uses search string "Pro", by default.
 	#-------------------------------------------------------------------------------------
-	# Overrides "LaunchpadBase" method
+	# Overrides "controller_base" method
 	def Open( self, number = 0, name = "Pro" ):
 		retval = super( LaunchpadPro, self ).Open( number = number, name = name )
 		if retval == True:
@@ -130,7 +134,7 @@ class LaunchpadPro( LaunchpadBase ):
 	#-- Does not check whether a device is in use or other, strange things...
 	#-- Uses search string "Launchpad Pro", by default.
 	#-------------------------------------------------------------------------------------
-	# Overrides "LaunchpadBase" method
+	# Overrides "controller_base" method
 	def Check( self, number = 0, name = "Launchpad Pro" ):
 		return super( LaunchpadPro, self ).Check( number = number, name = name )
 

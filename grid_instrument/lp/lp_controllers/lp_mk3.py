@@ -1,9 +1,6 @@
 import sys
 import array
-from pygame import midi
-from pygame import time
-
-from .pro import LaunchpadPro
+from .lp_pro import LaunchpadPro
 
 ########################################################################################
 ### CLASS LaunchpadPROMk3

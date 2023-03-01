@@ -1,9 +1,6 @@
 import sys
 import array
-from pygame import midi
-from pygame import time
-
-from .pro import LaunchpadPro
+from .lp_pro import LaunchpadPro
 
 ########################################################################################
 ### CLASS LaunchpadMiniMk3
@@ -86,7 +83,7 @@ class LaunchpadMiniMk3( LaunchpadPro ):
 	#-- Does not check whether a device is in use or other, strange things...
 	#-- Uses search string "MiniMk3", by default.
 	#-------------------------------------------------------------------------------------
-	# Overrides "LaunchpadBase" method
+	# Overrides "controller_base" method
 	def Check( self, number = 0, name = "MiniMK3" ):
 		return super( LaunchpadMiniMk3, self ).Check( number = number, name = name )
 

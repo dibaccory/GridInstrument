@@ -2,14 +2,12 @@ import time
 import random
 import math
 import collections
-import sys
 
 try:
-	from grid_instrument import lp as launchpad
+	import launchpad_py as launchpad
 except ImportError:
 	try:
-		print("import error, use native")
-		#import launchpad_py as launchpad
+		import launchpad_py
 	except ImportError:
 		sys.exit("error loading launchpad.py")
 
@@ -175,11 +173,11 @@ class GridInstrument:
 				y = (8 - but[1]) + 1
 				pressed = (but[2] > 0) or (but[2] == True)
 
-				if self._launchpad_mode == "notes":
+				if self._launchpad_mode is "notes":
 					if (x < 9) and (y < 9):
 						if pressed:
 							velocity = self.default_velocity
-							if self._launchpad_model == "Pro":
+							if self._launchpad_model is "Pro":
 								velocity = min(but[2] * self.launchpad_pro_velocity_multiplier, self.max_velocity)
 							self._button_pressed(x, y, velocity)
 						else:
@@ -198,7 +196,7 @@ class GridInstrument:
 							if randomButton:
 								self._button_released(randomButton[0], randomButton[1])
 								randomButton = None
-				if self._launchpad_mode == "settings":
+				if self._launchpad_mode is "settings":
 					if x == 6 and y == 8 and self._grid_layout != "Diatonic 4th":
 						self._grid_layout = "Diatonic 4th"
 						self._color_buttons()
@@ -209,13 +207,12 @@ class GridInstrument:
 						# Grid Key
 						self._grid_key = self.WHITE_KEYS[x - 1] + (y == 7)
 						self._color_buttons()
-						print("Key is ", self.NOTE_NAMES[self._grid_key])
+						print "Key is ", self.NOTE_NAMES[self._grid_key]
 					elif (1 <= x <= 8) and (1 <= y <= 4):
 						self._grid_musical_mode_button_pressed(x, y)
 				if x in [1, 2] and y == 9 and pressed and (self.kid_mode is not True):
-					#self.func_button_callback(x, y, pressed)
-					print("SAMPLE CHANGE BUTTON - TODO")
-				elif x == 9 and y == 8:
+					self.func_button_callback(x, y, pressed)
+				elif x is 9 and y == 8:
 					if pressed:
 						self._launchpad_mode = "settings"
 						self.lp.Reset()
@@ -238,7 +235,7 @@ class GridInstrument:
 			key = "pressed"
 		elif noteInterval is None:
 			key = "noteOutOfScale"
-		elif noteInterval == 0:
+		elif noteInterval is 0:
 			key = "root"
 		else:
 			key = "noteInScale"
@@ -250,7 +247,7 @@ class GridInstrument:
 		lpX = x - 1
 		lpY = -1 * (y - 9)
 
-		if self._launchpad_model == "Mk1":
+		if self._launchpad_model is "Mk1":
 			colorSet = "Mk1"
 			self.lp.LedCtrlXY(lpX, lpY, self.NOTE_COLORS[self._launchpad_model][buttonType][0], self.NOTE_COLORS[self._launchpad_model][buttonType][1])
 		else:
@@ -258,7 +255,7 @@ class GridInstrument:
 			self.lp.LedCtrlXY(lpX, lpY, self.NOTE_COLORS[colorSet][buttonType][0], self.NOTE_COLORS[colorSet][buttonType][1], self.NOTE_COLORS[colorSet][buttonType][2])
 
 	def _scroll_text(self, text, colorKey):
-		if self._launchpad_model == "Mk1":
+		if self._launchpad_model is "Mk1":
 			colorSet = "Mk1"
 			self.lp.LedCtrlString(text, self.NOTE_COLORS[self._launchpad_model][colorKey][0], self.NOTE_COLORS[self._launchpad_model][colorKey][1], self.lp.SCROLL_LEFT, 20)
 		else:
@@ -267,28 +264,28 @@ class GridInstrument:
 
 
 	def _color_buttons(self):
-		if self._launchpad_mode == "notes":
+		if self._launchpad_mode is "notes":
 			for x in range(1, 9):
 				for y in range(1, 9):
 					noteInfo = self._get_note_info(x, y)
 					scaleNoteNumber = noteInfo[2]
 					self._color_note_button(x, y, scaleNoteNumber, (noteInfo[0] in self._pressed_notes))
-		elif self._launchpad_mode == "settings":
+		elif self._launchpad_mode is "settings":
 			self._color_button(6, 8, "settingsGridLayoutOn" if self._grid_layout == "Diatonic 4th" else "settingsGridLayoutOff")                
 			self._color_button(7, 8, "settingsGridLayoutOn" if self._grid_layout == "Chromatic" else "settingsGridLayoutOff")                
 
-			self._color_button(1, 6, "settingsGridKeyOn" if self._grid_key == 0 else "settingsGridKeyOff")                
-			self._color_button(1, 7, "settingsGridKeyOn" if self._grid_key == 1 else "settingsGridKeyOff")                
-			self._color_button(2, 6, "settingsGridKeyOn" if self._grid_key == 2 else "settingsGridKeyOff")                
-			self._color_button(2, 7, "settingsGridKeyOn" if self._grid_key == 3 else "settingsGridKeyOff")                
-			self._color_button(3, 6, "settingsGridKeyOn" if self._grid_key == 4 else "settingsGridKeyOff")
-			self._color_button(4, 6, "settingsGridKeyOn" if self._grid_key == 5 else "settingsGridKeyOff")
-			self._color_button(4, 7, "settingsGridKeyOn" if self._grid_key == 6 else "settingsGridKeyOff")
-			self._color_button(5, 6, "settingsGridKeyOn" if self._grid_key == 7 else "settingsGridKeyOff")
-			self._color_button(5, 7, "settingsGridKeyOn" if self._grid_key == 8 else "settingsGridKeyOff")
-			self._color_button(6, 6, "settingsGridKeyOn" if self._grid_key == 9 else "settingsGridKeyOff")
-			self._color_button(6, 7, "settingsGridKeyOn" if self._grid_key == 10 else "settingsGridKeyOff")
-			self._color_button(7, 6, "settingsGridKeyOn" if self._grid_key == 11 else "settingsGridKeyOff")
+			self._color_button(1, 6, "settingsGridKeyOn" if self._grid_key is 0 else "settingsGridKeyOff")                
+			self._color_button(1, 7, "settingsGridKeyOn" if self._grid_key is 1 else "settingsGridKeyOff")                
+			self._color_button(2, 6, "settingsGridKeyOn" if self._grid_key is 2 else "settingsGridKeyOff")                
+			self._color_button(2, 7, "settingsGridKeyOn" if self._grid_key is 3 else "settingsGridKeyOff")                
+			self._color_button(3, 6, "settingsGridKeyOn" if self._grid_key is 4 else "settingsGridKeyOff")
+			self._color_button(4, 6, "settingsGridKeyOn" if self._grid_key is 5 else "settingsGridKeyOff")
+			self._color_button(4, 7, "settingsGridKeyOn" if self._grid_key is 6 else "settingsGridKeyOff")
+			self._color_button(5, 6, "settingsGridKeyOn" if self._grid_key is 7 else "settingsGridKeyOff")
+			self._color_button(5, 7, "settingsGridKeyOn" if self._grid_key is 8 else "settingsGridKeyOff")
+			self._color_button(6, 6, "settingsGridKeyOn" if self._grid_key is 9 else "settingsGridKeyOff")
+			self._color_button(6, 7, "settingsGridKeyOn" if self._grid_key is 10 else "settingsGridKeyOff")
+			self._color_button(7, 6, "settingsGridKeyOn" if self._grid_key is 11 else "settingsGridKeyOff")
 
 			self._color_button(1, 4, "settingsGridMusicalModeOn" if self._grid_musical_mode == "Major"  else "settingsGridMusicalModeOff")
 			self._color_button(2, 4, "settingsGridMusicalModeOn" if self._grid_musical_mode == "Minor"  else "settingsGridMusicalModeOff")
@@ -340,13 +337,13 @@ class GridInstrument:
 			notesPerOctave = len(self.MUSICAL_MODES[self._grid_musical_mode])
 			# notePerOctave = 7
 			# noteOctave = 1
-			notePositionInScale = int(base8NoteNumber % notesPerOctave)
-			noteInterval = self.MUSICAL_MODES[self._grid_musical_mode][notePositionInScale]
+			notePositionInScale = base8NoteNumber % notesPerOctave
+			noteInterval = self.MUSICAL_MODES[self._grid_musical_mode][(base8NoteNumber % notesPerOctave)]
 			# midiNote = ((self._grid_octave + 1) * 12) + self._grid_key + noteInterval + 12 * noteOctave
 		elif self._grid_layout == "Chromatic":
 			# eg. x, y = 2, 1
 			base8NoteNumber = (x-1) + (5 * (y-1))
-			# base8No4teNumber = 1
+			# base8NoteNumber = 1
 			notesPerOctave = 12
 			# noteOctave = 0
 			noteInterval = base8NoteNumber % notesPerOctave
@@ -401,7 +398,7 @@ class GridInstrument:
 				self._color_note_button(newButton[0], newButton[1], scaleNoteNumber, True)
 			self._pressed_notes.append(midiNote)
 		if self.debugging:
-			print("Button", buttonNumber, "pressed with MIDI note number", midiNote, "and velocity", velocity)
+			print "Button", buttonNumber, "pressed with MIDI note number", midiNote, "and velocity", velocity
 			pass
 		# print "Pressed Notes", _pressed_notes
 		return
@@ -410,7 +407,6 @@ class GridInstrument:
 	def _all_buttons_released(self):
 		for midiNote in self._pressed_notes:
 			self.note_callback('note_off', midiNote, 0)
-			#print("releasing all buttons")
 
 		del self._pressed_notes[:]
 		del self._pressed_buttons[:]
@@ -431,8 +427,6 @@ class GridInstrument:
 
 		if midiNote not in new_pressed_notes:
 			self.note_callback('note_off', midiNote, 0)
-			#
-			# print("Release button")
 			buttons = self._get_buttons_for_midi_note(midiNote)
 			for newButton in buttons:
 				noteInfo = self._get_note_info(newButton[0], newButton[1])
@@ -454,11 +448,11 @@ class GridInstrument:
 
 	def _grid_musical_mode_button_pressed(self, x, y):
 		index = (x - 1) + ((4 - y) * 8)
-		self._grid_musical_mode = list(self.MUSICAL_MODES.keys())[index]
+		self._grid_musical_mode = self.MUSICAL_MODES.keys()[index]
 		if self.debugging:
-			print("Musical mode is", self._grid_musical_mode)
+			print "Musical mode is", self._grid_musical_mode
 			pass
 
 		self._all_buttons_released()
 		self._color_buttons()
-		return
+		return;
