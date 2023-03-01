@@ -18,7 +18,7 @@ class LaunchpadMk2( LaunchpadPro ):
 
 	# LED AND BUTTON NUMBERS IN RAW MODE (DEC)
 	#
-	# Notice that the fine manual doesn't know that mode.
+	# Notice that the fine manual doesn't know that mode.git a 
 	# According to what's written there, the numbering used
 	# refers to the "PROGRAMMING MODE", which actually does
 	# not react to any of those notes (or numbers).
