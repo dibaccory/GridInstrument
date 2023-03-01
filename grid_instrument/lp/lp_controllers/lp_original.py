@@ -1,5 +1,11 @@
+import string
+import random
 import sys
 import array
+from ..charset import *
+from ..midi_handler import *
+from pygame import midi
+from pygame import time
 #import controller_base as controller_base
 from .controller_base import controller_base
 

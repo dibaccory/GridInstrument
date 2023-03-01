@@ -5,5 +5,4 @@ import sys
 import array
 from .charset import *
 from .midi_handler import *
-
 from .lp_controllers import *
