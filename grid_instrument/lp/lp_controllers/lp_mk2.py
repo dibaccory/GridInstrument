@@ -129,8 +129,7 @@ class LaunchpadMk2( LaunchpadPro ):
 	def ButtonStateXY( self ):
 		if self.midi.ReadCheck():
 			a = self.midi.ReadRaw()
-			print(a)
-			print("Ch14, Note on: ", MSG["note_on"]+self.CHANNEL)
+			#print("Msg (message type + midi channel): ", hex(a[0][0][0]), "\t Note: ", hex(a[0][0][1]), "\t Data: ", hex(a[0][0][2]))
 			if a[0][0][0] == (MSG["note_on"]+self.CHANNEL) or a[0][0][0] == (MSG["cc"]+self.CHANNEL):
 				if a[0][0][1] >= 104:
 					x = a[0][0][1] - 104
