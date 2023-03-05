@@ -234,22 +234,3 @@ MSG = {
 	"note_on":	0x90,
 	"cc":		0xB0
 }
-
-#class launchpad:
-#	Launchpad 		= controller.Launchpad
-#	LaunchpadMk2	= controller.LaunchpadMk2
-#	LaunchpadProMk3 = controller.LaunchpadProMk3
-#	LaunchpadPro	= controller.LaunchpadPro
-#	LaunchpadMiniMk3= controller.LaunchpadMiniMk3
-#	LaunchpadLPX	= controller.LaunchpadLPX
-#	LaunchControlXL	= controller.LaunchControlXL
-#	LaunchControl	= controller.LaunchControl
-#	LaunchKeyMini	= controller.LaunchKeyMini
-#	Dicer			= controller.Dicer
-#	MidiFighter64	= controller.MidiFighter64
-#	MidiFighter3D	= controller.MidiFighter3D
-
-
-
-
-

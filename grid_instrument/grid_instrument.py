@@ -184,11 +184,11 @@ class GridInstrument:
 							self._button_pressed(x, y, velocity)
 						else:
 							self._button_released(x, y)
-					elif x == 9 and y == 1 and pressed:
+					elif (x,y) == (9,1) and pressed:
 						# Clear screen
 						self.lp.Reset()
 						self._all_buttons_released()
-					elif x == 9 and y == 2:
+					elif (x,y) == (9,2):
 						# Random button mode
 						if pressed:
 							randomButtonModeEnabled = True
@@ -216,10 +216,10 @@ class GridInstrument:
 						self._grid_musical_mode_button_pressed(x, y)
 
 				#Change sample mode??
-				if x in [1, 2] and y == 9 and pressed and (self.kid_mode is not True):
+				if pressed and (x,y) in [(1,9), (2,9)] and (self.kid_mode is not True):
 					#self.func_button_callback(x, y, pressed)
 					print("SAMPLE CHANGE BUTTON - TODO")
-				elif x == 9 and y == 8:
+				elif (x,y) == (9,8):
 					if pressed:
 						self._launchpad_mode = "settings"
 						self.lp.Reset()
@@ -227,10 +227,12 @@ class GridInstrument:
 					else:
 						self._launchpad_mode = "notes"
 						self._color_buttons()
-				elif x == 9 and y == 6 and pressed:
+
+				elif pressed and (x,y) == (9,6):
 					if self._grid_octave < 8:
 						self._grid_octave += 1
-				elif x == 9 and y == 5 and pressed:
+
+				elif pressed and (x,y) == (9,5):
 					if self._grid_octave > 0:
 						self._grid_octave -= 1
 				
@@ -283,6 +285,7 @@ class GridInstrument:
 			self._color_button(6, 8, "settingsGridLayoutOn" if self._grid_layout == "Diatonic 4th" else "settingsGridLayoutOff")                
 			self._color_button(7, 8, "settingsGridLayoutOn" if self._grid_layout == "Chromatic" else "settingsGridLayoutOff")                
 
+			
 			self._color_button(1, 6, "settingsGridKeyOn" if self._grid_key == 0 else "settingsGridKeyOff")                
 			self._color_button(1, 7, "settingsGridKeyOn" if self._grid_key == 1 else "settingsGridKeyOff")                
 			self._color_button(2, 6, "settingsGridKeyOn" if self._grid_key == 2 else "settingsGridKeyOff")                
@@ -334,11 +337,14 @@ class GridInstrument:
 			self._color_button(1, 9, "pressed") # sample down
 			self._color_button(2, 9, "pressed") # sample up
 
+	def _minimum_note_on_board(self):
+		return ((self._grid_octave + 1) * 12) + self._grid_key
+
 	def get_note_info(self, x, y):
 		return self._get_note_info(x, y)
 
 	def _get_note_info(self, x, y):
-		midiNote = None
+		#midiNote = None
 		if self._grid_layout == "Diatonic 4th":
 
 			base8NoteNumber = (x-1) + (3 * (y-1))
@@ -347,6 +353,7 @@ class GridInstrument:
 			# noteOctave = 1
 			notePositionInScale = int(base8NoteNumber % notesPerOctave)
 			noteInterval = self.MUSICAL_MODES[self._grid_musical_mode][notePositionInScale]
+
 		elif self._grid_layout == "Chromatic":
 			# eg. x, y = 2, 1
 			base8NoteNumber = (x-1) + (5 * (y-1))
@@ -357,16 +364,16 @@ class GridInstrument:
 			noteInterval = base8NoteNumber % notesPerOctave
 
 		noteOctave = int(math.floor(base8NoteNumber / notesPerOctave))
-		midiNote = ((self._grid_octave + 1) * 12) + self._grid_key + noteInterval + 12 * noteOctave
+		midiNote = self._minimum_note_on_board() + noteInterval + 12 * noteOctave
 		#print("midiNote calculated:\t", midiNote)
 		return [midiNote, noteOctave, noteInterval if noteInterval in self.MUSICAL_MODES[self._grid_musical_mode] else None]
 
-	def _get_note_info_old(self, x, y):
-		base8NoteNumber = (x-1) + (3 * (y-1))
-		noteOctave = int(base8NoteNumber / 7)
-		scaleNoteNumber = base8NoteNumber % 7
-		midiNote = ((self._grid_octave + 1) * 12) + self._grid_key + self.MUSICAL_MODES[self._grid_musical_mode][scaleNoteNumber] + 12 * noteOctave
-		return [midiNote, noteOctave, scaleNoteNumber]
+	#def _get_note_info_old(self, x, y):
+	#	base8NoteNumber = (x-1) + (3 * (y-1))
+	#	noteOctave = int(base8NoteNumber / 7)
+	#	scaleNoteNumber = base8NoteNumber % 7
+	#	midiNote = self._minimum_note_on_board() + self.MUSICAL_MODES[self._grid_musical_mode][scaleNoteNumber] + 12 * noteOctave
+	#	return [midiNote, noteOctave, scaleNoteNumber]
 
 	def diff(first, second):
 		second = set(second)
@@ -386,34 +393,26 @@ class GridInstrument:
 			#if x=1 and y>2, then there are three buttons to highlight, TWO BELOW
 			#if x=8 and y<6, then there are three buttons to highlight, TWO ABOVE
 			#top notes always x < 2, middle notes always 3 < x < 6, bottom are always x > 6
-			
-			#if x < 3 and y > 2:
-			#	buttons = [[x, y], [x+3, y-1] ,[x+6, y-2]]
-			#elif (3 < x and x < 6) and y%7 != 1:
-			#	buttons = [[x-3, y+1], [x, y], [x+3, y-1]]
-			#elif x > 6 and y < 6:
-			#	buttons = [[x-6, y+2], [x-3, y-1] ,[x, y]]
 			i = x-1
-			btn_left 	=	[ int(i%3 + 1), 	y + int(i/3) % 3]
-			btn_center 	=	[ int(i%3 + 4),		y + int(x/3) - 1] if x%3 != 0 else None
-			btn_right	=	[ int(x%3 + 6), 	y + (int(x/3) % 3 - 2)]
+			in_bounds = (x,y) not in [ (x,9), (9,y) ]
+			btn_left 	=	[ int(i%3 + 1), y + int(i/3) % 3] if y < 9 - (int(i/3) % 3) else None
+			btn_center 	=	[ int(i%3 + 4),	y + int(x/3) - 1] if y < 9 - (int(x/3) - 1) and (x%3 != 0) else None
+			btn_right	=	[ int(x%3 + 6), y + (int(x/3) % 3 - 2)]
 			
 			buttons = [ btn for btn in [btn_left, btn_center, btn_right] if btn is not None]
 
 		elif self._grid_layout == "Chromatic":
 			other_x = (x - 1)%5 + (6 if x < 4 else 1)
-			other_btn = [other_x, y + int(math.copysign(1, x - other_x))] if x < 4 or x > 5 else None 	
-			if other_btn is not None:
-				buttons.append(other_btn)
+			if (x,y) not in [ (4,y),(5,y),(x,9) ]:
+				buttons.append( [other_x, y + int(math.copysign(1, x - other_x))] )
 			buttons.append([x,y])
+
 		print("actual btn: ", [x,y],"\tbuttons to highlight: ", buttons)
 		return buttons
 
 	def get_currently_playing_midi_notes(self):
 		midiNotes = []
 		for buttonNumber in self._pressed_buttons:
-			#Btn_x: 5, Btn_y: 1, buttonNumber = 4
-			#Btn_x: 2, Btn_y: 2, buttonNumber = 9
 			x = int(math.floor(buttonNumber % 8)) + 1
 			y = (buttonNumber / 8) + 1
 			print("Btn: ", buttonNumber, "\tx: ", x, "\ty: ", y)
@@ -426,7 +425,7 @@ class GridInstrument:
 
 	# This takes 1-based coordinates with 1,1 being the lower left button
 	def _button_pressed(self, x, y, velocity):
-		print("BTN_DWN\t x: ", x, "\t y: ", y)
+		#print("BTN_DWN\t x: ", x, "\t y: ", y)
 		buttonNumber = (x-1)  + ((y-1) * 8)
 		noteInfo = self._get_note_info(x, y)
 		midiNote = noteInfo[0]
@@ -443,8 +442,7 @@ class GridInstrument:
 		if self.debugging:
 			print("Button", buttonNumber, "pressed with MIDI note number", midiNote, "and velocity", velocity)
 			pass
-		#print("midi note pressed:\t", midiNote, "\t current: ", self.get_currently_playing_midi_notes())
-		return
+		print("PRESSED:\t", midiNote, "\t current: ", self.get_currently_playing_midi_notes())
 
 	# Todo, we should actually 
 	def _all_buttons_released(self):
@@ -456,44 +454,34 @@ class GridInstrument:
 		del self._pressed_buttons[:]
 
 	# This takes 1-based coordinates with 1,1 being the lower left button
-	def _button_released(self, x, y): 
-		print("BTN_UP\t x: ", x, "\t y: ", y)
+	def _button_released(self, x, y):
 		buttonNumber = (x-1)  + ((y-1) * 8)
+		# Question: what new notes (not buttons) are now no longer being pressed 
+		# Answer: probably by using the self._pressed_notes list you made silly
+		if buttonNumber not in self._pressed_buttons:
+			return
+
 		noteInfo = self._get_note_info(x, y)
 		midiNote = noteInfo[0]
 		#print("Pressed buttons: ", self._pressed_buttons)
 
-		# Question: what new notes (not buttons) are now no longer being pressed 
-		if buttonNumber not in self._pressed_buttons:
-			return
+		
 
 		self._pressed_buttons.remove(buttonNumber)
 		
 		new_pressed_notes = self.get_currently_playing_midi_notes()
-		print("midi note releasd:\t", midiNote, "\t current: ", new_pressed_notes)
+		print("RELEASED:\t", midiNote, "\t current: ", new_pressed_notes)
 
 		if midiNote not in new_pressed_notes:
 			self.note_callback('note_off', midiNote, 0)
-			#
-			# print("Release button")
 			buttons = self._get_buttons_for_midi_note(x,y)
+
 			for newButton in buttons:
 				noteInfo = self._get_note_info(newButton[0], newButton[1])
 				scaleNoteNumber = noteInfo[2]
 				self._color_note_button(newButton[0], newButton[1], scaleNoteNumber)
 
-		# newlyReleasedNotes = diff(_pressed_notes, new_pressed_notes)
-		# print("released notes: ", newlyReleasedNotes)
-		# for newlyReleaseMidiNote in newlyReleasedNotes:
-		#     MidiCallback([0b10000001, newlyReleaseMidiNote, 100], None)
-		#     buttons = _get_buttons_for_midi_note(x,y)
-		#     for newButton in buttons:
-		#         noteInfo = _get_note_info(newButton[0], newButton[1])
-		#         scaleNoteNumber = noteInfo[2]
-		#         _color_note_button(newButton[0], newButton[1], (scaleNoteNumber == 0))
 		self._pressed_notes = new_pressed_notes
-		# print "Pressed Notes", new_pressed_notes
-		return
 
 	def _grid_musical_mode_button_pressed(self, x, y):
 		index = (x - 1) + ((4 - y) * 8)
@@ -504,4 +492,3 @@ class GridInstrument:
 
 		self._all_buttons_released()
 		self._color_buttons()
-		return
