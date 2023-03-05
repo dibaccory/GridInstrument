@@ -414,8 +414,8 @@ class GridInstrument:
 		midiNotes = []
 		for buttonNumber in self._pressed_buttons:
 			x = int(math.floor(buttonNumber % 8)) + 1
-			y = (buttonNumber / 8) + 1
-			print("Btn: ", buttonNumber, "\tx: ", x, "\ty: ", y)
+			y = int(buttonNumber / 8) + 1
+			#print("Btn: ", buttonNumber, "\tx: ", x, "\ty: ", y)
 			#buttonNumber 4 -> x: 5, y: 1.5
 			#buttonNumber 9 -> x: 2, y: 2.125
 			noteInfo = self._get_note_info(x, y)
@@ -425,10 +425,11 @@ class GridInstrument:
 
 	# This takes 1-based coordinates with 1,1 being the lower left button
 	def _button_pressed(self, x, y, velocity):
-		#print("BTN_DWN\t x: ", x, "\t y: ", y)
-		buttonNumber = (x-1)  + ((y-1) * 8)
 		noteInfo = self._get_note_info(x, y)
 		midiNote = noteInfo[0]
+		if midiNote in self._pressed_notes:
+			return
+		buttonNumber = (x-1)  + ((y-1) * 8)
 		scaleNoteNumber = noteInfo[2]
 
 		self._pressed_buttons.append(buttonNumber)
@@ -446,7 +447,7 @@ class GridInstrument:
 
 	# Todo, we should actually 
 	def _all_buttons_released(self):
-		for midiNote in self._pressed_notes:
+		for midiNote in range(12,156):
 			self.note_callback('note_off', midiNote, 0)
 			#print("releasing all buttons")
 
