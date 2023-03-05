@@ -21,7 +21,7 @@ class GridInstrument:
 		('Minor', [0, 2, 3, 5, 7, 8, 10]),
 		('Dorian', [0, 2, 3, 5, 7, 9, 10]),
 		('Mixolydian', [0, 2, 4, 5, 7, 9, 10]),
-		('Lydian', [0, 2, 4, 6, 7, 9, 11]),
+		('Lydian' 	, [0, 2, 4, 6, 7, 9, 11]),
 		('Phrygian', [0, 1, 3, 5, 7, 8, 10]),
 		('Locrian', [0, 1, 3, 5, 6, 8, 10]),
 		('Diminished', [0, 1, 3, 4, 6, 7, 9, 10]),
@@ -285,7 +285,7 @@ class GridInstrument:
 			self._color_button(6, 8, "settingsGridLayoutOn" if self._grid_layout == "Diatonic 4th" else "settingsGridLayoutOff")                
 			self._color_button(7, 8, "settingsGridLayoutOn" if self._grid_layout == "Chromatic" else "settingsGridLayoutOff")                
 
-			
+
 			self._color_button(1, 6, "settingsGridKeyOn" if self._grid_key == 0 else "settingsGridKeyOff")                
 			self._color_button(1, 7, "settingsGridKeyOn" if self._grid_key == 1 else "settingsGridKeyOff")                
 			self._color_button(2, 6, "settingsGridKeyOn" if self._grid_key == 2 else "settingsGridKeyOff")                
