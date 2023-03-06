@@ -3,6 +3,7 @@ import random
 import math
 import collections
 import sys
+from .scales import *
 
 try:
 	from grid_instrument import lp as launchpad
@@ -16,39 +17,9 @@ except ImportError:
 class GridInstrument:
 
 	# Constants
-	MUSICAL_MODES = collections.OrderedDict([
-		('Major', [0, 2, 4, 5, 7, 9, 11]),
-		('Minor', [0, 2, 3, 5, 7, 8, 10]),
-		('Dorian', [0, 2, 3, 5, 7, 9, 10]),
-		('Mixolydian', [0, 2, 4, 5, 7, 9, 10]),
-		('Lydian' 	, [0, 2, 4, 6, 7, 9, 11]),
-		('Phrygian', [0, 1, 3, 5, 7, 8, 10]),
-		('Locrian', [0, 1, 3, 5, 6, 8, 10]),
-		('Diminished', [0, 1, 3, 4, 6, 7, 9, 10]),
 
-		('Whole-half', [0, 2, 3, 5, 6, 8, 9, 11]),
-		('Whole Tone', [0, 2, 4, 6, 8, 10]),
-		('Minor Blues', [0, 3, 5, 6, 7, 10]),
-		('Minor Pentatonic', [0, 3, 5, 7, 10]),
-		('Major Pentatonic', [0, 2, 4, 7, 9]),
-		('Harmonic Minor', [0, 2, 3, 5, 7, 8, 11]),
-		('Melodic Minor', [0, 2, 3, 5, 7, 9, 11]),
-		('Super Locrian', [0, 1, 3, 4, 6, 8, 10]),
 
-		('Bhairav', [0, 1, 4, 5, 7, 8, 11]),
-		('Hungarian Minor', [0, 2, 3, 6, 7, 8, 11]),
-		('Minor Gypsy', [0, 1, 4, 5, 7, 8, 10]),
-		('Hirojoshi', [0, 2, 3, 7, 8]),
-		('In-Sen', [0, 1, 5, 7, 10]),
-		('Iwato', [0, 1, 5, 6, 10]),
-		('Kumoi', [0, 2, 3, 7, 9]),
-		('Pelog', [0, 1, 3, 4, 7, 8]),
-
-		('Spanish', [0, 1, 3, 4, 5, 6, 8, 10]),
-		('IonEol', [0, 2, 3, 4, 5, 7, 8, 9, 10, 11])
-	])
-
-	WHITE_KEYS = MUSICAL_MODES['Major']
+	WHITE_KEYS = SCALE['Major']
 
 	NOTE_NAMES = ["C", "C#", "D", "Eb", "E", "F", "F#", "G", "G#", "A", "A#", "B"]
 
@@ -348,11 +319,11 @@ class GridInstrument:
 		if self._grid_layout == "Diatonic 4th":
 
 			base8NoteNumber = (x-1) + (3 * (y-1))
-			notesPerOctave = len(self.MUSICAL_MODES[self._grid_musical_mode])
+			notesPerOctave = len(SCALE[self._grid_musical_mode])
 			# notePerOctave = 7
 			# noteOctave = 1
 			notePositionInScale = int(base8NoteNumber % notesPerOctave)
-			noteInterval = self.MUSICAL_MODES[self._grid_musical_mode][notePositionInScale]
+			noteInterval = SCALE[self._grid_musical_mode][notePositionInScale]
 
 		elif self._grid_layout == "Chromatic":
 			# eg. x, y = 2, 1
@@ -366,13 +337,13 @@ class GridInstrument:
 		noteOctave = int(math.floor(base8NoteNumber / notesPerOctave))
 		midiNote = self._minimum_note_on_board() + noteInterval + 12 * noteOctave
 		#print("midiNote calculated:\t", midiNote)
-		return [midiNote, noteOctave, noteInterval if noteInterval in self.MUSICAL_MODES[self._grid_musical_mode] else None]
+		return [midiNote, noteOctave, noteInterval if noteInterval in SCALE[self._grid_musical_mode] else None]
 
 	#def _get_note_info_old(self, x, y):
 	#	base8NoteNumber = (x-1) + (3 * (y-1))
 	#	noteOctave = int(base8NoteNumber / 7)
 	#	scaleNoteNumber = base8NoteNumber % 7
-	#	midiNote = self._minimum_note_on_board() + self.MUSICAL_MODES[self._grid_musical_mode][scaleNoteNumber] + 12 * noteOctave
+	#	midiNote = self._minimum_note_on_board() + SCALE[self._grid_musical_mode][scaleNoteNumber] + 12 * noteOctave
 	#	return [midiNote, noteOctave, scaleNoteNumber]
 
 	def diff(first, second):
@@ -485,7 +456,7 @@ class GridInstrument:
 
 	def _grid_musical_mode_button_pressed(self, x, y):
 		index = (x - 1) + ((4 - y) * 8)
-		self._grid_musical_mode = list(self.MUSICAL_MODES.keys())[index]
+		self._grid_musical_mode = list(SCALE.keys())[index]
 		if self.debugging:
 			print("Musical mode is", self._grid_musical_mode)
 			pass
