@@ -1,13 +1,17 @@
 import collections
+from enum import Enum
 
 SCALE = collections.OrderedDict([
 	('Major',		[0, 2, 4, 5, 7, 9, 11]),
-	('Minor',		[0, 2, 3, 5, 7, 8, 10]),
+
+	#modes
+	('Aeolian',		[0, 2, 3, 5, 7, 8, 10]),
 	('Dorian',		[0, 2, 3, 5, 7, 9, 10]),
 	('Mixolydian', 	[0, 2, 4, 5, 7, 9, 10]),
 	('Lydian', 		[0, 2, 4, 6, 7, 9, 11]),
 	('Phrygian', 	[0, 1, 3, 5, 7, 8, 10]),
 	('Locrian', 	[0, 1, 3, 5, 6, 8, 10]),
+
 	('Diminished', 	[0, 1, 3, 4, 6, 7, 9, 10]),
 	('Whole-half', 	[0, 2, 3, 5, 6, 8, 9, 11]),
 	('Whole Tone', 	[0, 2, 4, 6, 8, 10]),
@@ -29,15 +33,18 @@ SCALE = collections.OrderedDict([
 	('IonEol', 				[0, 2, 3, 4, 5, 7, 8, 9, 10, 11])
 ])
 
-MODE = {
-	"Ionian":		["I", 	"ii", 	"iii", 	"IV", 	"V", 	"vi", 	"viib5"],
-    "Dorian":		["i", 	"ii", 	"bIII", "IV", 	"v", 	"vib5", "bVII"],
-    "Phrygian":		["i", 	"bII", 	"bIII", "iv", 	"vb5", 	"bVI", 	"bvii"],
-    "Lydian":		["I", 	"II", 	"iii", 	"ivb5", "V", 	"vi", 	"vii"],
-    "Mixolydian":	["I", 	"ii", 	"iiib5","IV", 	"v", 	"vi", 	"bVII"],
-    "Aeolian":		["i", 	"iib5", "bIII", "IV", 	"v", 	"bVI", 	"bVII"],
-    "Locrian":		["ib5", "bII", 	"biii", "iv", 	"bV", 	"bVI", 	"bvii"],
-}
+MODE_NAMES = ["Ionian", "Dorian", "Phrygian", "Lydian", "Mixolydian", "Aeolian", "Locrian"]
+
+#NOTE: triads on the / diagonal are all naturally diminished. This will be added in the class Chord
+MODAL_TRIADS = collections.OrderedDict([
+	("Ionian",		["I", 	"ii", 	"iii", 	"IV", 	"V", 	"vi", 	"vii"]),
+    ("Dorian",		["i", 	"ii", 	"bIII", "IV", 	"v", 	"vi", 	"bVII"]),
+    ("Phrygian",	["i", 	"bII", 	"bIII", "iv", 	"v", 	"bVI", 	"bvii"]),
+    ("Lydian",		["I", 	"II", 	"iii", 	"iv",	"V", 	"vi", 	"vii"]),
+    ("Mixolydian",	["I", 	"ii", 	"iii",	"IV", 	"v", 	"vi", 	"bVII"]),
+    ("Aeolian",		["i", 	"ii",	"bIII", "IV", 	"v", 	"bVI", 	"bVII"]),
+    ("Locrian",		["i", 	"bII", 	"biii", "iv",	"bV", 	"bVI", 	"bvii"]),
+])
 
 SCALE_CHORDS = {
     "I": []

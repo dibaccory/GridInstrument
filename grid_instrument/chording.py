@@ -6,13 +6,13 @@ from .scales import *
 #chord = Chord(MODES["Major"])
 #chord(1, self.seveth (BOOL), ext="", mod=0, sec=0, inv=0)
 #chord(1) -> I					chord(posInScale+1) -> if posInScale = 0, I
-#chord(1, "7") -> Imaj7
+#chord(1, ["7"]) -> Imaj7
 #chord(2, "7") -> ii7
-#chord(1, "add9") -> Iadd9
-#chord(1, "7 add9") -> Imaj7add9
+#chord(1, ["add9"]) -> Iadd9
+#chord(1, ["7", "add9"]) -> Imaj7add9
 #chord(1, "9") -> I9 -> Imaj7add9
 #chord(1, "6") -> I 1st inversion -> chord(1, inv=1)
-#chord(1, "6/9") -> I6/9 -> I6add9 
+#chord(1, ["6/9"]) -> I6/9 -> I6add9 
 #chord(1, "7", mod=4) -> Modal interchange of I using mode index 4 (Mixolydian) -> I7
 #chord(2, "7", sec="1") -> Dominant chord of 2, add 7th -> V7/ii
 #chord(2, "7", sec="2") -> Leading chord of 2, add 7th -> vii7b5/ii
@@ -98,18 +98,39 @@ class Chord:
 
 	def __init__(self, scale, jazzy=False):
 		self.scale = scale
+		self.scale_mode = scale if scale in MODE_NAMES else "Ionian"
 		self.jazzy = jazzy
 
-	def __call__(self, degree, jazzy, ext="", mod=0, sec=0, inv=0):
+	def toggle_jazzy():
+		self.jazzy = (not self.jazzy)
+
+	def update_scale(scale):
+		self.scale = scale
+		self.scale_mode = scale if scale in MODE_NAMES else "Ionian"
+
+	#degree = notePositionInScale
+	def __call__(self, degree, ext=[], mod=0, sec=0, inv=0):
 		scale_length = len(SCALE[self.scale])
 
 		#Get triad from scale
+		_3rd_degree = (degree+2)%scale_length
+		_5th_degree = (degree+4)%scale_length
+		_7th_degree = (degree+6)%scale_length
 		chord = [ 
 			SCALE[self.scale][degree],
-			SCALE[self.scale][(degree+2)%scale_length],
-			SCALE[self.scale][(degree+4)%scale_length],
+			SCALE[self.scale][_3rd_degree] + 12 if degree+2 >= scale_length else 0,
+			SCALE[self.scale][_5th_degree] + 12 if degree+4 >= scale_length else 0
 	   	]
 
+		if scale.jazzy or "7" in ext:
+
+
+		is_nat_diminished = degree == (6 - list(MODAL_TRIADS).index(scale_mode))
+
 		#Check triad type (major, minor, + (aug), o (dim))
+		triad_notation 	= MODAL_TRIADS[self.scale_mode][degree]
+		chord_notation 	= 
 
 		return chord
+
+		
