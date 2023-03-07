@@ -404,7 +404,7 @@ class GridInstrument:
 		midiNotes = []
 		for buttonNumber in self._pressed_buttons:
 			x = int(math.floor(buttonNumber % 8)) + 1
-			y = (buttonNumber / 8) + 1
+			y = (buttonNumber // 8) + 1
 			print("Btn: ", buttonNumber, "\tx: ", x, "\ty: ", y)
 			#buttonNumber 4 -> x: 5, y: 1.5
 			#buttonNumber 9 -> x: 2, y: 2.125
@@ -431,6 +431,8 @@ class GridInstrument:
 		else:
 			self._play_note(x,y, midiNote, scale_degree, velocity)
 
+		print("end _button_pressed: ", self.get_currently_playing_midi_notes())
+
 	def _play_note(self, x,y, midiNote, scale_degree, velocity):
 
 		self.note_callback("note_on", midiNote, velocity)
@@ -443,13 +445,12 @@ class GridInstrument:
 		if self.debugging:
 			print("Button", buttonNumber, "pressed with MIDI note number", midiNote, "and velocity", velocity)
 			pass
-		print("PRESSED:\t", midiNote, "\t current: ", self.get_currently_playing_midi_notes())
+		print("NOTE ON:\t", midiNote)
 
 	# Todo, we should actually 
 	def _all_buttons_released(self):
 		for midiNote in self._pressed_notes:
 			self.note_callback('note_off', midiNote, 0)
-			#print("releasing all buttons")
 
 		del self._pressed_notes[:]
 		del self._pressed_buttons[:]
@@ -465,26 +466,30 @@ class GridInstrument:
 		noteInfo = self._get_note_info(x, y)
 		midiNote = noteInfo[0]
 		#print("Pressed buttons: ", self._pressed_buttons)
-
-		
-
-		self._pressed_buttons.remove(buttonNumber)
-		
 		new_pressed_notes = self.get_currently_playing_midi_notes()
-		print("RELEASED:\t", midiNote, "\t current: ", new_pressed_notes)
 
 		if midiNote not in new_pressed_notes:
-			self.note_callback('note_off', midiNote, 0)
-			buttons = self._get_buttons_for_midi_note(x,y)
+			if self._chord_mode:
+				#turn off all associated notes
+				for note in self._chord.chord:
+					self._stop_note(x, y, midiNote-noteInfo[2]+note[1])
+			else:
+				self._stop_note(x, y, midiNote)
 
-			for newButton in buttons:
-				noteInfo = self._get_note_info(newButton[0], newButton[1])
-				self._color_note_button(newButton[0], newButton[1], noteInfo[2])
-
+		self._pressed_buttons.remove(buttonNumber)
 		self._pressed_notes = new_pressed_notes
+		print("end _button_released: ", self.get_currently_playing_midi_notes())
 
 	def _stop_note(self, x,y, midiNote):
-		pass
+		self.note_callback('note_off', midiNote, 0)
+		buttons = self._get_buttons_for_midi_note(x,y)
+
+		for newButton in buttons:
+			noteInfo = self._get_note_info(newButton[0], newButton[1])
+			self._color_note_button(newButton[0], newButton[1], noteInfo[2])
+
+		print("NOTE OFF:\t", midiNote)
+
 
 	def _grid_musical_mode_button_pressed(self, x, y):
 		index = (x - 1) + ((4 - y) * 8)
