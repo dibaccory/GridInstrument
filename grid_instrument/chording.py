@@ -6,10 +6,10 @@ from .scales import *
 #chord = Chord(MODES["Major"])
 #chord(1, self.seveth (BOOL), ext="", mod=0, sec=0, inv=0)
 #chord(1) -> I					chord(posInScale+1) -> if posInScale = 0, I
-#chord(1, ["7"]) -> Imaj7
+#chord(1, ["maj7"]) -> Imaj7
 #chord(2, "7") -> ii7
 #chord(1, ["add9"]) -> Iadd9
-#chord(1, ["7", "add9"]) -> Imaj7add9
+#chord(1, [add9"]) with jazzy = True -> Imaj7add9
 #chord(1, "9") -> I9 -> Imaj7add9
 #chord(1, "6") -> I 1st inversion -> chord(1, inv=1)
 #chord(1, ["6/9"]) -> I6/9 -> I6add9 
@@ -96,21 +96,19 @@ class Chord:
 	scale = "Major" #[0, 2, 4, 5, 7, 9, 11]
 
 
-	def __init__(self, scale, jazzy=False):
+	def __init__(self, scale="Major", jazzy=False):
 		self.scale = scale
 		self.scale_mode = scale if scale in MODE_NAMES else "Ionian"
 		self.jazzy = jazzy
 
-	def toggle_jazzy():
-		self.jazzy = (not self.jazzy)
-
-	def update_scale(scale):
-		self.scale = scale
-		self.scale_mode = scale if scale in MODE_NAMES else "Ionian"
-
 	#degree = notePositionInScale
 	def __call__(self, degree, ext=[], mod=0, sec=0, inv=0):
 		scale_length = len(SCALE[self.scale])
+
+		if scale_length != 7:
+			print("Scale length is weird...switch to Major")
+			self.update_scale("Major")
+			scale_length = len(SCALE[self.scale])
 
 		#Get triad from scale
 		_3rd_degree = (degree+2)%scale_length
@@ -122,15 +120,50 @@ class Chord:
 			SCALE[self.scale][_5th_degree] + 12 if degree+4 >= scale_length else 0
 	   	]
 
-		if scale.jazzy or "7" in ext:
+		nat_7th_note 	= SCALE[self.scale][_7th_degree] + (12 if degree > 1 else 0)
+		nat_7th_ivl 	= abs( SCALE[self.scale][degree] - nat_7th_note )
+		nat_7th 		= "7" if nat_7th_ivl in [2,10] else "maj7"
+		alt_7th 		= "7" if nat_7th == "maj7" else "maj7"
+		alt_7th_note 	= nat_7th_note + (1 if nat_7th == "7" else -1) 
+		_7th_notation = None
 
+		#Choose alternate 7th over natural 7th
+		if alt_7th in ext:
+			ext.remove(alt_7th)
+			_7th_notation = alt_7th
+			chord.append(alt_7th_note)
 
-		is_nat_diminished = degree == (6 - list(MODAL_TRIADS).index(scale_mode))
+		#Nat 7th in additional tones list (ext)
+		if nat_7th in ext:
+			ext.remove(nat_7th)
+			if _7th_notation ==
+			_7th_notation = nat_7th if _7th_notation == None else _7th_notation
+			chord.append(nat_7th_note)
+		
+		#No 7th button pressed, but jazz chords on
+		elif self.jazzy and alt_7th not in ext: 
+			_7th_notation = nat_7th
+			chord.append(nat_7th_note)
+			
+		#add tones to the chord	
+		for tone in ext:
+			self.add_tone(chord, tone)
 
-		#Check triad type (major, minor, + (aug), o (dim))
-		triad_notation 	= MODAL_TRIADS[self.scale_mode][degree]
-		chord_notation 	= 
+		is_nat_diminished = (degree == 6 - list(MODAL_TRIADS).index(self.scale_mode))
+
+		chord_notation 	= MODAL_TRIADS[self.scale_mode][degree]
+
 
 		return chord
+
+	def toggle_jazzy(self):
+		self.jazzy = (not self.jazzy)
+
+	def update_scale(self, scale):
+		self.scale = scale
+		self.scale_mode = scale if scale in MODE_NAMES else "Ionian"
+
+	def add_tone(self, ch, tone):
+		if "7"
 
 		
