@@ -132,6 +132,7 @@ class GridInstrument:
 			time.sleep(0.005) # 5ms wait between loops
 			but = self.lp.ButtonStateXY()
 
+			#TODO: Convert to sequencer / Arpeggiator
 			if randomButtonModeEnabled:
 				if randomButtonCounter > 30:
 					if randomButton:
@@ -144,8 +145,9 @@ class GridInstrument:
 				randomButtonCounter = randomButtonCounter + 1
 
 			if but != []:
+				#TODO: Convert x,y back to original coord state... it's inverted
 				x = but[0] + 1
-				y = (8 - but[1]) + 1
+				y = (8 - but[1]) + 1 #why invert this??
 				pressed = (but[2] > 0) or (but[2] == True)
 
 				if self._launchpad_mode == "notes":
@@ -159,6 +161,7 @@ class GridInstrument:
 						else:
 
 							self._button_released(x, y)
+					#TODO: Change tuples to Enumeration for readability
 					elif (x,y) == (9,1) and pressed:
 						# Clear screen
 						self.lp.Reset()
@@ -184,6 +187,7 @@ class GridInstrument:
 					elif (x,y) == (7,8) and self._grid_layout != "Chromatic":
 						self._grid_layout = "Chromatic"
 						self._color_buttons()
+					#(x,y) < (8,6)
 					elif (((1 <= x < 8) and (y == 6)) or ((x in [1, 2, 4, 5, 6]) and y == 7)) and pressed:
 						# Grid Key
 						self._grid_key = self.WHITE_KEYS[x - 1] + (y == 7)
@@ -255,7 +259,7 @@ class GridInstrument:
 			colorSet = "Mk2"
 			self.lp.LedCtrlString(text, self.NOTE_COLORS[colorSet][colorKey][0], self.NOTE_COLORS[colorSet][colorKey][1], self.NOTE_COLORS[colorSet][colorKey][2], self.lp.SCROLL_LEFT, 20)
 
-
+	#Colors whole layout on mode change. Like an initalization for each mode
 	def _color_buttons(self):
 		if self._launchpad_mode == "notes":
 			for x in range(1, 9):
@@ -266,10 +270,12 @@ class GridInstrument:
 
 		#Settings > Scales			
 		elif self._launchpad_mode == "settings":
+
 			self._color_button(6, 8, "settingsGridLayoutOn" if self._grid_layout == "Diatonic 4th" else "settingsGridLayoutOff")                
 			self._color_button(7, 8, "settingsGridLayoutOn" if self._grid_layout == "Chromatic" else "settingsGridLayoutOff")                
 
-
+			#for i in GRID_KEY.len
+			#	colorbutton(GRID_KEY[i], "on" if _gridkey = i else "pff")
 			self._color_button(1, 6, "settingsGridKeyOn" if self._grid_key == 0 else "settingsGridKeyOff")                
 			self._color_button(1, 7, "settingsGridKeyOn" if self._grid_key == 1 else "settingsGridKeyOff")                
 			self._color_button(2, 6, "settingsGridKeyOn" if self._grid_key == 2 else "settingsGridKeyOff")                
@@ -284,7 +290,7 @@ class GridInstrument:
 			self._color_button(7, 6, "settingsGridKeyOn" if self._grid_key == 11 else "settingsGridKeyOff")
 
 			self._color_button(1, 4, "settingsGridMusicalModeOn" if self._grid_musical_mode == "Major"  else "settingsGridMusicalModeOff")
-			self._color_button(2, 4, "settingsGridMusicalModeOn" if self._grid_musical_mode == "Minor"  else "settingsGridMusicalModeOff")
+			self._color_button(2, 4, "settingsGridMusicalModeOn" if self._grid_musical_mode == "Aeolian"  else "settingsGridMusicalModeOff")
 			self._color_button(3, 4, "settingsGridMusicalModeOn" if self._grid_musical_mode == "Dorian" else "settingsGridMusicalModeOff")
 			self._color_button(4, 4, "settingsGridMusicalModeOn" if self._grid_musical_mode == "Mixolydian"  else "settingsGridMusicalModeOff")
 			self._color_button(5, 4, "settingsGridMusicalModeOn" if self._grid_musical_mode == "Lydian"  else "settingsGridMusicalModeOff")
