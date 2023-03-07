@@ -64,6 +64,8 @@ def invert(ch, inv):
           ch[i] += (12 if inv > i else 0)
     return ch
 
+
+
 def _7(ch):
 	return ch.append(ch[0]+10)
 
@@ -94,7 +96,20 @@ def _b13(ch):
 class Chord:
 
 	scale = "Major" #[0, 2, 4, 5, 7, 9, 11]
+	scale_mode = "Ionian"
+	jazzy = False
+	chord = None
 
+	EXT_TONES = {
+	"7": 		10,
+	"maj7":		11,
+	"add9":		SCALE[scale][1],
+	"b9":		SCALE[scale][1]-1, 
+	"add11":	SCALE[scale][3],
+	"b11":		SCALE[scale][3]-1,
+	"add13": 	SCALE[scale][5],
+	"b13":		SCALE[scale][5]-1
+	}
 
 	def __init__(self, scale="Major", jazzy=False):
 		self.scale = scale
@@ -114,10 +129,10 @@ class Chord:
 		_3rd_degree = (degree+2)%scale_length
 		_5th_degree = (degree+4)%scale_length
 		_7th_degree = (degree+6)%scale_length
-		chord = [ 
-			SCALE[self.scale][degree],
-			SCALE[self.scale][_3rd_degree] + 12 if degree+2 >= scale_length else 0,
-			SCALE[self.scale][_5th_degree] + 12 if degree+4 >= scale_length else 0
+		self.chord = [ 
+			['1',	SCALE[self.scale][degree]],
+			['3',	SCALE[self.scale][_3rd_degree] + (12 if degree+2 >= scale_length else 0)],
+			['5',	SCALE[self.scale][_5th_degree] + (12 if degree+4 >= scale_length else 0)]
 	   	]
 
 		nat_7th_note 	= SCALE[self.scale][_7th_degree] + (12 if degree > 1 else 0)
@@ -125,36 +140,32 @@ class Chord:
 		nat_7th 		= "7" if nat_7th_ivl in [2,10] else "maj7"
 		alt_7th 		= "7" if nat_7th == "maj7" else "maj7"
 		alt_7th_note 	= nat_7th_note + (1 if nat_7th == "7" else -1) 
-		_7th_notation = None
+		_7th_notation = ""
 
 		#Choose alternate 7th over natural 7th
 		if alt_7th in ext:
 			ext.remove(alt_7th)
 			_7th_notation = alt_7th
-			chord.append(alt_7th_note)
+			self.chord.append([_7th_notation, alt_7th_note])
 
-		#Nat 7th in additional tones list (ext)
-		if nat_7th in ext:
-			ext.remove(nat_7th)
-			if _7th_notation ==
-			_7th_notation = nat_7th if _7th_notation == None else _7th_notation
-			chord.append(nat_7th_note)
-		
-		#No 7th button pressed, but jazz chords on
-		elif self.jazzy and alt_7th not in ext: 
+		elif self.jazzy or nat_7th in ext:
+			try:
+				ext.remove(nat_7th)
+			except ValueError:
+				pass
 			_7th_notation = nat_7th
-			chord.append(nat_7th_note)
+			self.chord.append([_7th_notation, nat_7th_note])
 			
 		#add tones to the chord	
 		for tone in ext:
-			self.add_tone(chord, tone)
+			self.add_tone(tone)
 
-		is_nat_diminished = (degree == 6 - list(MODAL_TRIADS).index(self.scale_mode))
+		nat_dim = "b5" if (degree == 6 - list(MODAL_TRIADS).index(self.scale_mode)) else ""
 
-		chord_notation 	= MODAL_TRIADS[self.scale_mode][degree]
+		chord_notation	= MODAL_TRIADS[self.scale_mode][degree] + _7th_notation + nat_dim + "".join(ext)
+		print("Playing: ", chord_notation)
 
-
-		return chord
+		return self.chord
 
 	def toggle_jazzy(self):
 		self.jazzy = (not self.jazzy)
@@ -163,7 +174,10 @@ class Chord:
 		self.scale = scale
 		self.scale_mode = scale if scale in MODE_NAMES else "Ionian"
 
-	def add_tone(self, ch, tone):
-		if "7"
+	def add_tone(self, tone):
+		self.chord.append([tone, self.EXT_TONES[tone] + 12])
+
+	def rem_tone(self, tone):
+		self.remove(tone)
 
 		
