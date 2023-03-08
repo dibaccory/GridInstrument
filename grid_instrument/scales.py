@@ -20,6 +20,7 @@ SCALE = collections.OrderedDict([
 	('Major Pentatonic', 	[0, 2, 4, 7, 9]),
 	('Harmonic Minor', 		[0, 2, 3, 5, 7, 8, 11]),
 	('Melodic Minor', 		[0, 2, 3, 5, 7, 9, 11]),
+
 	('Super Locrian', 		[0, 1, 3, 4, 6, 8, 10]),
 	('Bhairav', 			[0, 1, 4, 5, 7, 8, 11]),
 	('Hungarian Minor', 	[0, 2, 3, 6, 7, 8, 11]),
@@ -32,6 +33,8 @@ SCALE = collections.OrderedDict([
 	('Spanish', 			[0, 1, 3, 4, 5, 6, 8, 10]),
 	('IonEol', 				[0, 2, 3, 4, 5, 7, 8, 9, 10, 11])
 ])
+
+SCALE_NAMES = list(SCALE.keys())
 
 MODE_NAMES = ["Ionian", "Dorian", "Phrygian", "Lydian", "Mixolydian", "Aeolian", "Locrian"]
 
