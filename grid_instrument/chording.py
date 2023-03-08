@@ -111,7 +111,7 @@ class Chord:
 	"b13":		SCALE[scale][5]-1
 	}
 
-	def __init__(self, scale="Major", jazzy=False):
+	def __init__(self, scale="Major", jazzy=True):
 		self.scale = scale
 		self.scale_mode = scale if scale in MODE_NAMES else "Ionian"
 		self.jazzy = jazzy

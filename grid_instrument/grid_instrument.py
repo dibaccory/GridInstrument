@@ -2,6 +2,7 @@ import time
 import random
 import math
 import collections
+import numpy as np
 import sys
 from .scales import *
 from .chording import Chord
@@ -112,8 +113,8 @@ class GridInstrument:
 	_scale_key = 0
 	
 	_layout_index = 1
-	_layout_name = GRID_LAYOUT[1][0]
-	_layout_overlap = GRID_LAYOUT[1][1]
+	_layout_name = GRID_LAYOUT[0][0]
+	_layout_offset = GRID_LAYOUT[0][1]
 	
 	_launchpad_mode = "notes" #modes: notes, settings, chord
 	_LED_mode = "Pressed" #modes: Pressed, fireworks, pattern by interval?
@@ -193,7 +194,7 @@ class GridInstrument:
 				pressed = (but[2] > 0) or (but[2] == True)
 
 				if self._launchpad_mode == "notes":
-					self._note_mode_handler(x,y,pressed)
+					self._note_mode_handler(x,y,pressed, but[2])
 
 				#Settings
 				elif self._launchpad_mode == "settings":
@@ -201,23 +202,20 @@ class GridInstrument:
 					#(x,y) < (8,6)
 					if (x,y) in KEY_OPTIONS["settings"]["key"] and pressed:
 						# Active Key
-						self._scale_key = self.WHITE_KEYS[x - 1] + (y == 7)
+						self._scale_key = KEY_OPTIONS["settings"]["key"].index((x,y))
 						print("Key is ", self.NOTE_NAMES[self._scale_key])
 
-						self.GRID_LAYOUT[0][1] = self._active_scale
+						self.GRID_LAYOUT["Scale"][1] = len(SCALE[self._active_scale])
 						self._color_buttons()
 						
 					elif (x,y) in KEY_OPTIONS["settings"]["scale"]:
 						if pressed:
 							self._highlight_keys_in_scale()
-						self._active_scale_button_pressed(x, y)
+						else:
+							self._active_scale_button_pressed(x, y)
 
-				
+				self._global_func_handler(x,y,pressed)
 
-					
-				
-				if self.debugging is True:
-					print(" event: ", but, x, y)
 
 	def _note_mode_handler(self, x, y, pressed, lp_vel):
 		if (x < 9) and (y < 9):
@@ -251,12 +249,18 @@ class GridInstrument:
 				if self.randomButton:
 					self._button_released(self.randomButton[0], self.randomButton[1])
 					self.randomButton = None
-		elif (x,y) == (3,9):
-			self._layout_index = (self._layout_index - 1)%len(self.GRID_LAYOUT)
-			#self._layout = self.GRID_LAYOUT[self._layout]
-		elif (x,y) == (4,9):
-			self._layout_index = (self._layout_index + 1)%len(self.GRID_LAYOUT)
-			#self._layout = self.GRID_LAYOUT[self._layout]
+		elif (x,y) == (3,9) and pressed:
+			#self._layout_index = (self._layout_index - 1)%len(self.GRID_LAYOUT)
+			self.GRID_LAYOUT = self.GRID_LAYOUT[-1:] + self.GRID_LAYOUT[:-1]
+			self._layout_name = self.GRID_LAYOUT[0][0]
+			self._layout_offset = self.GRID_LAYOUT[0][1]
+			self._color_buttons()
+		elif (x,y) == (4,9) and pressed:
+			#self._layout_index = (self._layout_index + 1)%len(self.GRID_LAYOUT)
+			self.GRID_LAYOUT = self.GRID_LAYOUT[1:] + self.GRID_LAYOUT[:1]
+			self._layout_name = self.GRID_LAYOUT[0][0]
+			self._layout_offset = self.GRID_LAYOUT[0][1]
+			self._color_buttons()
 		
 		#if (x,y) == (6,8) and self._layout != "Diatonic 4th":
 		#	self._layout = "Diatonic 4th"
@@ -357,6 +361,9 @@ class GridInstrument:
 			self._color_button(1, 9, "note.pressed") # sample down
 			self._color_button(2, 9, "note.pressed") # sample up
 
+	def _is_key_in_scale(self, key):
+		return key in SCALE[self._active_scale]
+
 	def _is_interval_in_scale(self, x, y):
 		return self._get_note_interval(x, y) in SCALE[self._active_scale]
 
@@ -364,17 +371,17 @@ class GridInstrument:
 		return ((self._grid_octave + 1) * 12) + self._scale_key
 
 	def _get_scale_length(self):
-		return len(SCALE[self._active_scale]) if self._layout != "Chromatic" else 12
+		return len(SCALE[self._active_scale]) if self._layout_name != "Chromatic" else 12
 
 	def _get_note_grid_index(self, x, y):
-		return (x-1) + (y-1) * self.GRID_LAYOUT[self._layout]
+		return (x-1) + (y-1) * self._layout_offset
 
 	def _get_scale_degree(self, x, y):
 		return self._get_note_grid_index(x,y) % self._get_scale_length()
 
 	def _get_note_interval(self, x, y):
 		scale_degree = self._get_scale_degree(x, y)
-		return SCALE[self._active_scale][scale_degree] if self._layout != "Chromatic" else scale_degree
+		return SCALE[self._active_scale][scale_degree] if self._layout_name != "Chromatic" else scale_degree
 
 	def _get_midi_note(self, x, y):
 		note_octave = self._get_note_grid_index(x, y) // self._get_scale_length()
@@ -405,13 +412,14 @@ class GridInstrument:
 			buttons = [ btn for btn in [btn_left, btn_center, btn_right] if btn is not None]
 
 		elif self._layout_name == "Diatonic 5th":
-			other_x = (x - 1)%4 + (1 if x < 4 else 5)
+			other_x = (x - 1)%4 + (5 if x-1 < (8 - self._layout_offset) else 1)
 			buttons.append([other_x, y + int(math.copysign(1, x - other_x))])
 			buttons.append([x,y])
 
 		elif self._layout_name == "Scale":
-			other_x = (x - 1)%4 + (1 if x < 4 else 5)
-			buttons.append([other_x, y + int(math.copysign(1, x - other_x))])
+			other_x = (x - 1)%self._layout_offset + (self._layout_offset+1 if x-1 < (8 - self._layout_offset) else 1)
+			if x != other_x:
+				buttons.append([other_x, y + int(math.copysign(1, x - other_x))])
 			buttons.append([x,y])
 		
 		elif self._layout_name == "Chromatic":
@@ -432,6 +440,9 @@ class GridInstrument:
 			if midi_note not in midiNotes:
 				midiNotes.append(midi_note)
 		return midiNotes
+
+	def _MIDI_to_XY(midi_note):
+		return (0,0)
 
 	# This takes 1-based coordinates with 1,1 being the lower left button
 	def _button_pressed(self, x, y, velocity):
@@ -530,5 +541,9 @@ class GridInstrument:
 
 	def _highlight_keys_in_scale(self):
 		root = self._scale_key
-		for key in range(root, root+11):
-			self._color_button(KEY_OPTIONS["settings"]["key"][key%11][0], KEY_OPTIONS["settings"]["key"][key%11][1], "note.in_scale")
+		for key in range(root+1, root+11):
+			key %= 12
+			if self._is_key_in_scale(key):
+				x = KEY_OPTIONS["settings"]["key"][key][0]
+				y = KEY_OPTIONS["settings"]["key"][key][1]
+				self._color_button(x, y, "note.in_scale")
