@@ -16,11 +16,7 @@ except ImportError:
 		sys.exit("error loading launchpad.py")
 
 
-GRID_LAYOUT_OFFSET = {
-	"Diatonic 4th": 3,
-	"Diatonic 5th": 4,
-	"Chromatic":	5
-}
+
 
 KEY_OPTIONS = {
 	"settings": {
@@ -38,7 +34,7 @@ KEY_OPTIONS = {
 	}
 	#TODO note mode options
 }
-
+#TODO: MidiMatrix
 class GridInstrument:
 
 	# Constants
@@ -52,7 +48,12 @@ class GridInstrument:
 	#		self.y = y
 	#		self.color = color
 	#		self.pressed = pressed
-
+	GRID_LAYOUT = [
+		["Scale",		7],
+		["Diatonic 4th", 3],
+		["Diatonic 5th", 4],
+		["Chromatic",	5]
+	]
 
 	WHITE_KEYS = SCALE['Major']
 
@@ -108,11 +109,20 @@ class GridInstrument:
 	_pressed_chords = []
 	_active_scale = 'Major'
 	_grid_octave = 3
-	_active_key = 0
-	_grid_layout = "Diatonic 4th" # possible values are "Diatonic 4th" and "Chromatic"
-	_launchpad_mode = "notes" # possible values are "notes" and "settings"
+	_scale_key = 0
+	
+	_layout_index = 1
+	_layout_name = GRID_LAYOUT[1][0]
+	_layout_overlap = GRID_LAYOUT[1][1]
+	
+	_launchpad_mode = "notes" #modes: notes, settings, chord
+	_LED_mode = "Pressed" #modes: Pressed, fireworks, pattern by interval?
 	_chord_mode = False
 	_chord = None
+
+	randomButton = None
+	randomButtonCounter = 0
+	randomButtonModeEnabled = False
 
 	def __init__( self ):
 		print("LaunchpadScalemode Initialized!")
@@ -153,31 +163,28 @@ class GridInstrument:
 			self._scroll_text(self.intro_message, 'settingsKeyOff')
 			pass
 
+	#TODO: Make prettier. Maybe make 
 	def _main_loop(self):
 		self.lp.ButtonFlush()
 		self.lp.Reset()
 
 		self._color_buttons()
 
-		randomButton = None
-		randomButtonCounter = 0
-		randomButtonModeEnabled = False
-
 		while True:
 			time.sleep(0.005) # 5ms wait between loops
 			but = self.lp.ButtonStateXY()
 
 			#TODO: Convert to sequencer / Arpeggiator
-			if randomButtonModeEnabled:
-				if randomButtonCounter > 30:
-					if randomButton:
-						self._button_released(randomButton[0], randomButton[1])  
-						randomButton = None
+			if self.randomButtonModeEnabled:
+				if self.randomButtonCounter > 30:
+					if self.randomButton:
+						self._button_released(self.randomButton[0], self.randomButton[1])  
+						self.randomButton = None
 					# Make a new randomButton
-					randomButton = [random.randint(1,8), random.randint(1,8)]
-					self._button_pressed(randomButton[0], randomButton[1], 100)
-					randomButtonCounter = 0
-				randomButtonCounter = randomButtonCounter + 1
+					self.randomButton = [random.randint(1,8), random.randint(1,8)]
+					self._button_pressed(self.randomButton[0], self.randomButton[1], 100)
+					self.randomButtonCounter = 0
+				self.randomButtonCounter = self.randomButtonCounter + 1
 
 			if but != []:
 				#TODO: Convert x,y back to original coord state... it's inverted
@@ -186,87 +193,102 @@ class GridInstrument:
 				pressed = (but[2] > 0) or (but[2] == True)
 
 				if self._launchpad_mode == "notes":
-					if (x < 9) and (y < 9):
-						if pressed:
-							velocity = self.default_velocity
-							if self._launchpad_model == "Pro":
-								velocity = min(but[2] * self.launchpad_pro_velocity_multiplier, self.max_velocity)
-
-							self._button_pressed(x, y, velocity)
-						else:
-
-							self._button_released(x, y)
-					#TODO: Change tuples to Enumeration for readability
-					elif (x,y) == (9,1) and pressed:
-						# Clear screen
-						self.lp.Reset()
-						self._all_buttons_released()
-					elif (x,y) == (9,2):
-						# Random button mode
-						if pressed:
-							randomButtonModeEnabled = True
-							randomButton = None
-							randomButtonCounter = 0
-						else:
-							randomButtonModeEnabled = False
-							if randomButton:
-								self._button_released(randomButton[0], randomButton[1])
-								randomButton = None
-								
+					self._note_mode_handler(x,y,pressed)
 
 				#Settings
-				if self._launchpad_mode == "settings":
+				elif self._launchpad_mode == "settings":
 					self._all_buttons_released()
-					if (x,y) == (6,8) and self._grid_layout != "Diatonic 4th":
-						self._grid_layout = "Diatonic 4th"
-						self._color_buttons()
-					elif (x,y) == (7,8) and self._grid_layout != "Diatonic 5th":
-						self._grid_layout = "Diatonic 5th"
-						self._color_buttons()
-					elif (x,y) == (8,8) and self._grid_layout != "Chromatic":
-						self._grid_layout = "Chromatic"
-						self._color_buttons()
 					#(x,y) < (8,6)
-					elif (((1 <= x < 8) and (y == 6)) or ((x in [1, 2, 4, 5, 6]) and y == 7)) and pressed:
-						# Grid Key
-						self._active_key = self.WHITE_KEYS[x - 1] + (y == 7)
+					if (x,y) in KEY_OPTIONS["settings"]["key"] and pressed:
+						# Active Key
+						self._scale_key = self.WHITE_KEYS[x - 1] + (y == 7)
+						print("Key is ", self.NOTE_NAMES[self._scale_key])
+
+						self.GRID_LAYOUT[0][1] = self._active_scale
 						self._color_buttons()
-						print("Key is ", self.NOTE_NAMES[self._active_key])
+						
 					elif (x,y) in KEY_OPTIONS["settings"]["scale"]:
 						if pressed:
 							self._highlight_keys_in_scale()
 						self._active_scale_button_pressed(x, y)
 
-				#Change sample mode??
-				if pressed and (x,y) in [(1,9), (2,9)] and (self.kid_mode is not True):
-					#self.func_button_callback(x, y, pressed)
-					print("SAMPLE CHANGE BUTTON - TODO")
-				elif (x,y) == (9,8):
-					if pressed:
-						self._launchpad_mode = "settings"
-						self.lp.Reset()
-						self._color_buttons()
-					else:
-						self._launchpad_mode = "notes"
-						self._color_buttons()
+				
 
-				elif pressed and (x,y) == (9,6):
-					if self._grid_octave < 8:
-						self._grid_octave += 1
-
-				elif pressed and (x,y) == (9,5):
-					if self._grid_octave > 0:
-						self._grid_octave -= 1
-
-				elif pressed and (x,y) == (9,3):
-						#Chord mode
-						if self._chord is None:
-							self._chord = Chord(self._active_scale)
-						self._chord_mode = not self._chord_mode
-						print("CHORD MODE ", ("ON" if self._chord_mode else "OFF"))		
+					
 				
 				if self.debugging is True:
 					print(" event: ", but, x, y)
+
+	def _note_mode_handler(self, x, y, pressed, lp_vel):
+		if (x < 9) and (y < 9):
+			if pressed:
+				velocity = self.default_velocity
+				if self._launchpad_model == "Pro":
+					velocity = min(lp_vel * self.launchpad_pro_velocity_multiplier, self.max_velocity)
+
+				self._button_pressed(x, y, velocity)
+			else:
+				self._button_released(x, y)
+		elif pressed and (x,y) == (9,3):
+			#Chord mode
+			if self._chord is None:
+				self._chord = Chord(self._active_scale)
+			self._chord_mode = not self._chord_mode
+			print("CHORD MODE ", ("ON" if self._chord_mode else "OFF"))	
+		#TODO: Change tuples to Enumeration for readability
+		elif (x,y) == (9,1) and pressed:
+			# Clear screen
+			self.lp.Reset()
+			self._all_buttons_released()
+		elif (x,y) == (9,2):
+			# Random button mode
+			if pressed:
+				self.randomButtonModeEnabled = True
+				self.randomButton = None
+				self.randomButtonCounter = 0
+			else:
+				self.randomButtonModeEnabled = False
+				if self.randomButton:
+					self._button_released(self.randomButton[0], self.randomButton[1])
+					self.randomButton = None
+		elif (x,y) == (3,9):
+			self._layout_index = (self._layout_index - 1)%len(self.GRID_LAYOUT)
+			#self._layout = self.GRID_LAYOUT[self._layout]
+		elif (x,y) == (4,9):
+			self._layout_index = (self._layout_index + 1)%len(self.GRID_LAYOUT)
+			#self._layout = self.GRID_LAYOUT[self._layout]
+		
+		#if (x,y) == (6,8) and self._layout != "Diatonic 4th":
+		#	self._layout = "Diatonic 4th"
+		#	self._color_buttons()
+		#elif (x,y) == (7,8) and self._layout != "Diatonic 5th":
+		#	self._layout = "Diatonic 5th"
+		#	self._color_buttons()
+		#elif (x,y) == (8,8) and self._layout != "Chromatic":
+		#	self._layout = "Chromatic"
+		#	self._color_buttons()
+					
+	def _global_func_handler(self, x, y, pressed):
+		#Change sample mode??
+		if pressed and (x,y) in [(1,9), (2,9)] and (self.kid_mode is not True):
+			#self.func_button_callback(x, y, pressed)
+			print("SAMPLE CHANGE BUTTON - TODO")
+		elif (x,y) == (9,8):
+			if pressed:
+				self._launchpad_mode = "settings"
+				self.lp.Reset()
+				self._color_buttons()
+			else:
+				self._launchpad_mode = "notes"
+				self._color_buttons()
+
+		elif pressed and (x,y) == (9,6):
+			if self._grid_octave < 8:
+				self._grid_octave += 1
+
+		elif pressed and (x,y) == (9,5):
+			if self._grid_octave > 0:
+				self._grid_octave -= 1
 
 	def _color_note_button(self, x, y, note_interval=1, pressed=False):
 		if pressed:
@@ -310,15 +332,16 @@ class GridInstrument:
 		#Settings > Scales			
 		elif self._launchpad_mode == "settings":
 
-			self._color_button(6, 8, "settings.layout_" + ("on" if self._grid_layout == "Diatonic 4th" else "off"))
-			self._color_button(7, 8, "settings.layout_" + ("on" if self._grid_layout == "Diatonic 5th" else "off"))           
-			self._color_button(8, 8, "settings.layout_" + ("on" if self._grid_layout == "Chromatic" else "off"))                
+			self._color_button(5, 8, "settings.layout_" + ("on" if self._layout_name == "Scale" else "off"))
+			self._color_button(6, 8, "settings.layout_" + ("on" if self._layout_name == "Diatonic 4th" else "off"))
+			self._color_button(7, 8, "settings.layout_" + ("on" if self._layout_name == "Diatonic 5th" else "off"))           
+			self._color_button(8, 8, "settings.layout_" + ("on" if self._layout_name == "Chromatic" else "off"))                
 
 			#for i in GRID_KEY.len
 			#	colorbutton(GRID_KEY[i], "on" if _gridkey = i else "pff")
 			key_i = 0
 			for x,y in KEY_OPTIONS["settings"]["key"]:
-				self._color_button(x,y, "settings.key_" + ("on" if self._active_key == key_i else "off") )
+				self._color_button(x,y, "settings.key_" + ("on" if self._scale_key == key_i else "off") )
 				key_i +=1
 
 			scale_i = 0
@@ -338,20 +361,20 @@ class GridInstrument:
 		return self._get_note_interval(x, y) in SCALE[self._active_scale]
 
 	def _minimum_note_on_board(self):
-		return ((self._grid_octave + 1) * 12) + self._active_key
+		return ((self._grid_octave + 1) * 12) + self._scale_key
 
 	def _get_scale_length(self):
-		return len(SCALE[self._active_scale]) if self._grid_layout != "Chromatic" else 12
+		return len(SCALE[self._active_scale]) if self._layout != "Chromatic" else 12
 
 	def _get_note_grid_index(self, x, y):
-		return (x-1) + (y-1) * GRID_LAYOUT_OFFSET[self._grid_layout]
+		return (x-1) + (y-1) * self.GRID_LAYOUT[self._layout]
 
 	def _get_scale_degree(self, x, y):
 		return self._get_note_grid_index(x,y) % self._get_scale_length()
 
 	def _get_note_interval(self, x, y):
 		scale_degree = self._get_scale_degree(x, y)
-		return SCALE[self._active_scale][scale_degree] if self._grid_layout != "Chromatic" else scale_degree
+		return SCALE[self._active_scale][scale_degree] if self._layout != "Chromatic" else scale_degree
 
 	def _get_midi_note(self, x, y):
 		note_octave = self._get_note_grid_index(x, y) // self._get_scale_length()
@@ -366,7 +389,7 @@ class GridInstrument:
 
 	def _get_buttons_for_midi_note(self, x, y):
 		buttons = []
-		if self._grid_layout == "Diatonic 4th":
+		if self._layout_name == "Diatonic 4th":
 			#if x=1 and y>2, then there are three buttons to highlight, TWO BELOW
 			#if x=8 and y<6, then there are three buttons to highlight, TWO ABOVE
 			#top notes always x < 2, middle notes always 3 < x < 6, bottom are always x > 6
@@ -381,12 +404,17 @@ class GridInstrument:
 			
 			buttons = [ btn for btn in [btn_left, btn_center, btn_right] if btn is not None]
 
-		elif self._grid_layout == "Diatonic 5th":
+		elif self._layout_name == "Diatonic 5th":
+			other_x = (x - 1)%4 + (1 if x < 4 else 5)
+			buttons.append([other_x, y + int(math.copysign(1, x - other_x))])
+			buttons.append([x,y])
+
+		elif self._layout_name == "Scale":
 			other_x = (x - 1)%4 + (1 if x < 4 else 5)
 			buttons.append([other_x, y + int(math.copysign(1, x - other_x))])
 			buttons.append([x,y])
 		
-		elif self._grid_layout == "Chromatic":
+		elif self._layout_name == "Chromatic":
 			other_x = (x - 1)%5 + (6 if x < 4 else 1)
 			if (x,y) not in [ (4,y),(5,y),(x,9) ]:
 				buttons.append( [other_x, y + int(math.copysign(1, x - other_x))] )
@@ -501,6 +529,6 @@ class GridInstrument:
 		self._color_buttons()
 
 	def _highlight_keys_in_scale(self):
-		root = self._active_key
+		root = self._scale_key
 		for key in range(root, root+11):
 			self._color_button(KEY_OPTIONS["settings"]["key"][key%11][0], KEY_OPTIONS["settings"]["key"][key%11][1], "note.in_scale")
