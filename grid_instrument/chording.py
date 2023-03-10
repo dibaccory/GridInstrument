@@ -36,6 +36,10 @@ CRD = {
     "vii":	[11, 14, 18],
 }	
 
+MAJOR_MODES=["I", "bII", "II", "bIII", "III", "IV", "bV", "V", "bVI", "VI", "bVII", "VII"]
+
+MINOR_MODES=["i", "bii", "ii", "biii", "iii", "iv", "bv", "v", "bvi", "vi", "bvii", "vii"]
+
 def sus2(ch):
     return [ch[0], ch[0]+2, ch[2]]
 
@@ -117,15 +121,18 @@ class Chord:
 		self.jazzy = jazzy
 
 	#degree = notePositionInScale
-	def __call__(self, degree, ext=[], mod=0, sec=0, inv=0):
+	def __call__(self, degree, ext=[], mod=0, sec=0, inv=0, in_scale=True):
 		scale_length = len(SCALE[self.scale])
 
-		if scale_length != 7:
-			print("Scale length is weird...switch to Major")
-			self.update_scale("Major")
-			scale_length = len(SCALE[self.scale])
+		#if scale_length != 7:
+		#	print("Scale length is weird...switch to Major")
+		#	self.update_scale("Major")
+		#	scale_length = len(SCALE[self.scale])
+
+		#NOTE: Jazz:		im7 II7 bIIImaj7 IV7 [viio7/V OR bVIIb9/V] vm7 vim7 (bVIImaj7 === Vmaj7/bIII) [viio7 or (viimaj7b5 === bVIIb9) ]  
 
 		#Get triad from scale
+		#NOTE: Getting triad by the scale degree only works of the scale is heptatonic (7 notes)
 		_3rd_degree = (degree+2)%scale_length
 		_5th_degree = (degree+4)%scale_length
 		_7th_degree = (degree+6)%scale_length
@@ -179,5 +186,18 @@ class Chord:
 
 	def rem_tone(self, tone):
 		self.remove(tone)
+
+	#If in_scale = False (parameter "degree" is not actually in current scale), find a good sounds leading chord
+	def get_leading_chord(self, interval, chord):
+		leading_chord = chord
+		#in chromatic: Leading triads always dim, but for 7ths: 
+		# Maj -> min OR min -> dim = dim maj7, 
+		# min -> min = o7, 
+		# Maj -> Maj = m7b5
+		
+
+
+
+
 
 		

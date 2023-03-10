@@ -39,6 +39,11 @@ SCALE_NAMES = list(SCALE.keys())
 MODE_NAMES = ["Ionian", "Dorian", "Phrygian", "Lydian", "Mixolydian", "Aeolian", "Locrian"]
 
 #NOTE: triads on the / diagonal are all naturally diminished. This will be added in the class Chord
+#in chromatic: Leading triads always dim, but for 7ths: Maj -> min OR min -> dim = dim maj7, min -> min = o7, Maj -> Maj = m7b5
+
+#blues scale = minor pentatonic w leading 4 to 5. Lets say that lead is 7th, then blues scale starts in Mixolydian. 
+#Triads:	i II bIII IV vii/v v vi V/bIII vii
+#Jazz:		im7 II7 bIIImaj7 IV7 [viio7/V OR bVIIb9/V] vm7 vim7 (bVIImaj7 === Vmaj7/bIII) [viio7 or (viimaj7b5 === bVIIb9) ]  
 MODAL_TRIADS = collections.OrderedDict([
 	("Ionian",		["I", 	"ii", 	"iii", 	"IV", 	"V", 	"vi", 	"vii"]),
     ("Dorian",		["i", 	"ii", 	"bIII", "IV", 	"v", 	"vi", 	"bVII"]),

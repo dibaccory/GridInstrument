@@ -379,8 +379,13 @@ class GridInstrument:
 	def _get_note_grid_index(self, x, y):
 		return (x-1) + (y-1) * self._layout_offset
 
-	def _get_scale_degree(self, x, y):
-		return self._get_note_grid_index(x,y) % self._get_scale_length()
+	def _get_scale_degree(self, x=None, y=None, inv=None):
+		if x is not None and y is not None:
+			return self._get_note_grid_index(x,y) % self._get_scale_length()
+		elif inv is not None:
+			print(inv)
+			#There exists a d in span Scale[self._active_scale] s.t. inv%d = 0 , thus inv % 12 will always be indexed
+			return SCALE[self._active_scale].index(inv % 12) + (self._get_scale_length() + 1) * (inv // 12)
 
 	def _get_note_interval(self, x, y):
 		scale_degree = self._get_scale_degree(x, y)
@@ -404,6 +409,9 @@ class GridInstrument:
 		os = self._layout_offset
 		possible_btns = [(x-2*os,y+2), (x-os,y+1), (x,y), (x+os,y-1), (x+2*os, y-2)]
 		return [ btn for btn in possible_btns if self._in_matrix_bounds(btn[0], btn[1]) ]
+	
+	def _get_XY_by_button_number(self, btn):
+		return (btn%8 + 1), (btn//8 + 1)
 
 	def get_currently_playing_midi_notes(self):
 		midiNotes = []
@@ -417,19 +425,26 @@ class GridInstrument:
 
 	# This takes 1-based coordinates with 1,1 being the lower left button
 	def _button_pressed(self, x, y, velocity):
-		#print("BTN_DWN\t x: ", x, "\t y: ", y)
-		buttonNumber = (x-1)  + ((y-1) * 8)
-		self._pressed_buttons.append(buttonNumber)
+		print("BTN_DWN\t x: ", x, "\t y: ", y)
+		button_number = (x-1)  + ((y-1) * 8)
+		self._pressed_buttons.append(button_number)
 
 		midiNote = self._get_midi_note(x, y)
 		scale_degree = self._get_scale_degree(x, y)
+		btn_inv = self._get_note_interval(x, y)
 
 		if self._chord_mode:
-			new_chord = self._chord(scale_degree)
+			new_chord = self._chord(scale_degree, in_scale=self._is_interval_in_scale(x,y))
 			if new_chord not in self._pressed_chords:
-				root = midiNote-self._get_note_interval(x, y)
-				for note in new_chord:
-					self._play_note(x,y, root + note[1], velocity)
+				print("CHORD:", new_chord)
+				root = midiNote - btn_inv
+				for inv in new_chord:
+					note = root + inv[1]
+					new_btn_num = button_number - scale_degree + self._get_scale_degree(inv=inv[1])
+					print("old btn num:\t", button_number, "\tNew button num:\t", new_btn_num)
+					ntx , nty = self._get_XY_by_button_number(new_btn_num)
+					print(ntx, nty)
+					self._play_note(ntx,nty, note, velocity)
 				self._pressed_chords.append(new_chord)
 
 		else:
@@ -464,24 +479,27 @@ class GridInstrument:
 
 	# This takes 1-based coordinates with 1,1 being the lower left button
 	def _button_released(self, x, y):
-		buttonNumber = (x-1)  + ((y-1) * 8)
+		button_number = (x-1)  + ((y-1) * 8)
 
-		if buttonNumber not in self._pressed_buttons:
+		if button_number not in self._pressed_buttons:
 			return
 
 		midiNote = self._get_midi_note(x, y)
 		#print("Pressed buttons: ", self._pressed_buttons)
-		self._pressed_buttons.remove(buttonNumber)
+		self._pressed_buttons.remove(button_number)
 		new_pressed_notes = self.get_currently_playing_midi_notes()
+		btn_inv = self._get_note_interval(x, y)
 
 		if midiNote not in new_pressed_notes:
 			if self._chord_mode:
 				#turn off all associated notes
-				root = midiNote - self._get_note_interval(x, y)
-				released_chord = self._chord(self._get_scale_degree(x, y))
-				for note in released_chord:
-					print("CHORD NOTE: ", note)
-					self._stop_note(x, y, root + note[1])
+				root = midiNote - btn_inv
+				released_chord = self._pressed_chords(-1)
+				for inv in released_chord:
+					note = root + inv[1]
+					print("CHORD NOTE: ", inv)
+					ntx , nty = self._get_XY_by_button_number(button_number - btn_inv + inv[1])
+					self._stop_note(ntx, nty, note)
 				self._pressed_chords.remove(released_chord)
 					
 			else:
