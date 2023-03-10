@@ -56,6 +56,8 @@ class GridInstrument:
 		["Chromatic",	5]
 	]
 
+	SCALE_LAYOUT = ["Scale", 7]
+
 	WHITE_KEYS = SCALE['Major']
 
 	NOTE_NAMES = ["C", "C#", "D", "Eb", "E", "F", "F#", "G", "G#", "A", "A#", "B"]
@@ -205,7 +207,7 @@ class GridInstrument:
 						self._scale_key = KEY_OPTIONS["settings"]["key"].index((x,y))
 						print("Key is ", self.NOTE_NAMES[self._scale_key])
 
-						self.GRID_LAYOUT["Scale"][1] = len(SCALE[self._active_scale])
+						self.GRID_LAYOUT[self.GRID_LAYOUT.index(self.SCALE_LAYOUT)][1] = len(SCALE[self._active_scale])
 						self._color_buttons()
 						
 					elif (x,y) in KEY_OPTIONS["settings"]["scale"]:
@@ -213,6 +215,7 @@ class GridInstrument:
 							self._highlight_keys_in_scale()
 						else:
 							self._active_scale_button_pressed(x, y)
+						self._highlight_keys_in_scale()
 
 				self._global_func_handler(x,y,pressed)
 
@@ -393,43 +396,14 @@ class GridInstrument:
 	def diff(first, second):
 		second = set(second)
 		return [item for item in first if item not in second]
+	
+	def _in_matrix_bounds(self, i, j):
+		return 0 < i < 9 and 0 < j < 9
 
 	def _get_buttons_for_midi_note(self, x, y):
-		buttons = []
-		if self._layout_name == "Diatonic 4th":
-			#if x=1 and y>2, then there are three buttons to highlight, TWO BELOW
-			#if x=8 and y<6, then there are three buttons to highlight, TWO ABOVE
-			#top notes always x < 2, middle notes always 3 < x < 6, bottom are always x > 6
-
-			#What's stopping us from getting XYs for note interval / scale degree?
-			#Then take only XYs in the same note_octave?
-			i = x-1
-			in_bounds = (x,y) not in [ (x,9), (9,y) ]
-			btn_left 	=	[ int(i%3 + 1), y + int(i/3) % 3] if y < 9 - (int(i/3) % 3) else None
-			btn_center 	=	[ int(i%3 + 4),	y + int(x/3) - 1] if y < 9 - (int(x/3) - 1) and (x%3 != 0) else None
-			btn_right	=	[ int(x%3 + 6), y + (int(x/3) % 3 - 2)]
-			
-			buttons = [ btn for btn in [btn_left, btn_center, btn_right] if btn is not None]
-
-		elif self._layout_name == "Diatonic 5th":
-			other_x = (x - 1)%4 + (5 if x-1 < (8 - self._layout_offset) else 1)
-			buttons.append([other_x, y + int(math.copysign(1, x - other_x))])
-			buttons.append([x,y])
-
-		elif self._layout_name == "Scale":
-			other_x = (x - 1)%self._layout_offset + (self._layout_offset+1 if x-1 < (8 - self._layout_offset) else 1)
-			if x != other_x:
-				buttons.append([other_x, y + int(math.copysign(1, x - other_x))])
-			buttons.append([x,y])
-		
-		elif self._layout_name == "Chromatic":
-			other_x = (x - 1)%5 + (6 if x < 4 else 1)
-			if (x,y) not in [ (4,y),(5,y),(x,9) ]:
-				buttons.append( [other_x, y + int(math.copysign(1, x - other_x))] )
-			buttons.append([x,y])
-
-		#print("actual btn: ", [x,y],"\tbuttons to highlight: ", buttons)
-		return buttons
+		os = self._layout_offset
+		possible_btns = [(x-2*os,y+2), (x-os,y+1), (x,y), (x+os,y-1), (x+2*os, y-2)]
+		return [ btn for btn in possible_btns if self._in_matrix_bounds(btn[0], btn[1]) ]
 
 	def get_currently_playing_midi_notes(self):
 		midiNotes = []
@@ -440,9 +414,6 @@ class GridInstrument:
 			if midi_note not in midiNotes:
 				midiNotes.append(midi_note)
 		return midiNotes
-
-	def _MIDI_to_XY(midi_note):
-		return (0,0)
 
 	# This takes 1-based coordinates with 1,1 being the lower left button
 	def _button_pressed(self, x, y, velocity):
@@ -456,8 +427,9 @@ class GridInstrument:
 		if self._chord_mode:
 			new_chord = self._chord(scale_degree)
 			if new_chord not in self._pressed_chords:
+				root = midiNote-self._get_note_interval(x, y)
 				for note in new_chord:
-					self._play_note(x,y, midiNote-self._get_note_interval(x, y) + note[1], velocity)
+					self._play_note(x,y, root + note[1], velocity)
 				self._pressed_chords.append(new_chord)
 
 		else:
@@ -466,9 +438,11 @@ class GridInstrument:
 		print("end _button_pressed: ", self.get_currently_playing_midi_notes())
 
 	def _play_note(self, x,y, midiNote, velocity):
+
 		if midiNote not in self._pressed_notes:
 			self.note_callback("note_on", midiNote, velocity)
 			buttons = self._get_buttons_for_midi_note(x,y)
+
 			for btn_x, btn_y in buttons:
 				self._color_note_button(btn_x, btn_y, pressed=True)
 
