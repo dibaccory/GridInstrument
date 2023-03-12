@@ -23,7 +23,6 @@ import array
 from pygame import midi
 from pygame import time
 
-print("we in my world now bitch")
 
 
 ##########################################################################################

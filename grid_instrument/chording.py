@@ -166,7 +166,7 @@ class Chord:
 	def _get_7th(self, degree, chord, ext=[]):
 		scale_length = len(SCALE[self.scale])
 		_7th_degree = (degree+6)%scale_length
-		nat_7th_note 	= SCALE[self.scale][_7th_degree] + (12 if degree > 1 else 0)
+		nat_7th_note 	= SCALE[self.scale][_7th_degree] + (12 if degree > 0 else 0)
 		nat_7th_ivl 	= abs( SCALE[self.scale][degree] - nat_7th_note )
 		nat_7th 		= "7" if nat_7th_ivl in [2,10] else "maj7"
 		alt_7th 		= "7" if nat_7th == "maj7" else "maj7"

@@ -112,7 +112,7 @@ class GridInstrument:
 	_pressed_chords = []
 	_active_scale = {
 		"name": "Major",
-		"mode": "0",
+		"mode": 0, #0 is "ionian", but since we aren't dealing with only 7-note scales (diatonic, namely), we index instead
 		"span": SCALE["Major"]
 	}
 	_grid_octave = 3
@@ -387,9 +387,10 @@ class GridInstrument:
 		if x is not None and y is not None:
 			return self._get_note_grid_index(x,y) % self._get_scale_length()
 		elif inv is not None:
-			print(inv)
+			#print(inv)
 			#There exists a d in span Scale[self._active_scale] s.t. inv%d = 0 , thus inv % 12 will always be indexed
-			return self._active_scale["span"].index(inv % 12) + (self._get_scale_length() + 1) * (inv // 12)
+			#print("Scale degree of inv ", inv, " :\t", self._active_scale["span"].index(inv % 12) + (self._get_scale_length() + 1) * (inv // 12))
+			return self._active_scale["span"].index(inv % 12) + (self._get_scale_length() + 8 - self._layout_offset) * (inv // 12)
 
 	def _get_note_interval(self, x, y):
 		scale_degree = self._get_scale_degree(x, y)
@@ -429,8 +430,9 @@ class GridInstrument:
 
 	# This takes 1-based coordinates with 1,1 being the lower left button
 	def _button_pressed(self, x, y, velocity):
-		print("BTN_DWN\t x: ", x, "\t y: ", y)
+		
 		button_number = (x-1)  + ((y-1) * 8)
+		print(f"Button:\t{button_number}\t ({x},{y})")
 		self._pressed_buttons.append(button_number)
 
 		midiNote = self._get_midi_note(x, y)
@@ -444,6 +446,7 @@ class GridInstrument:
 				root = midiNote - btn_inv
 				for note_pos in new_chord:
 					note = root + note_pos
+					print(f"new_btn_num = {button_number} - {scale_degree} + self._get_scale_degree(inv={note_pos})")
 					new_btn_num = button_number - scale_degree + self._get_scale_degree(inv=note_pos)
 					print("old btn num:\t", button_number, "\tNew button num:\t", new_btn_num)
 					ntx , nty = self._get_XY_by_button_number(new_btn_num)
@@ -454,7 +457,46 @@ class GridInstrument:
 		else:
 			self._play_note(x,y, midiNote, velocity)
 
-		print("end _button_pressed: ", self.get_currently_playing_midi_notes())
+		#print("end _button_pressed: ", self.get_currently_playing_midi_notes())
+
+	# This takes 1-based coordinates with 1,1 being the lower left button
+	def _button_released(self, x, y):
+		button_number = (x-1)  + ((y-1) * 8)
+
+		if button_number not in self._pressed_buttons:
+			return
+
+		midiNote = self._get_midi_note(x, y)
+		#print("Pressed buttons: ", self._pressed_buttons)
+		self._pressed_buttons.remove(button_number)
+		new_pressed_notes = self.get_currently_playing_midi_notes()
+		scale_degree = self._get_scale_degree(x, y)
+		btn_inv = self._get_note_interval(x, y)
+
+		if midiNote not in new_pressed_notes:
+			if self._chord_mode:
+				#turn off all associated notes
+				root = midiNote - btn_inv
+				try:
+					released_chord = self._pressed_chords[-1]
+				except IndexError:
+					print("How tf is this empty?\tpressed chord", self._pressed_chords)
+					return
+
+				for note_pos in released_chord:
+					note = root + note_pos
+					new_btn_num = button_number - scale_degree + self._get_scale_degree(inv=note_pos)
+					#print("RELEASED old btn num:\t", button_number, "\tNew button num:\t", new_btn_num)
+					ntx , nty = self._get_XY_by_button_number(new_btn_num)
+					self._stop_note(ntx, nty, note)
+				self._pressed_chords.remove(released_chord)
+					
+			else:
+				self._stop_note(x, y, midiNote)
+
+		
+		self._pressed_notes = new_pressed_notes
+		#print("end _button_released: ", self.get_currently_playing_midi_notes())
 
 	def _play_note(self, x,y, midiNote, velocity):
 
@@ -473,45 +515,6 @@ class GridInstrument:
 
 		print("NOTE ON:\t", midiNote)
 
-	# Todo, we should actually 
-	def _all_buttons_released(self):
-		for midiNote in self._pressed_notes:
-			self.note_callback('note_off', midiNote, 0)
-
-		del self._pressed_notes[:]
-		del self._pressed_buttons[:]
-
-	# This takes 1-based coordinates with 1,1 being the lower left button
-	def _button_released(self, x, y):
-		button_number = (x-1)  + ((y-1) * 8)
-
-		if button_number not in self._pressed_buttons:
-			return
-
-		midiNote = self._get_midi_note(x, y)
-		#print("Pressed buttons: ", self._pressed_buttons)
-		self._pressed_buttons.remove(button_number)
-		new_pressed_notes = self.get_currently_playing_midi_notes()
-		btn_inv = self._get_note_interval(x, y)
-
-		if midiNote not in new_pressed_notes:
-			if self._chord_mode:
-				#turn off all associated notes
-				root = midiNote - btn_inv
-				released_chord = self._pressed_chords(-1)
-				for note_pos in released_chord:
-					note = root + note_pos
-					print("CHORD NOTE: ", note_pos)
-					ntx , nty = self._get_XY_by_button_number(button_number - btn_inv + note_pos)
-					self._stop_note(ntx, nty, note)
-				self._pressed_chords.remove(released_chord)
-					
-			else:
-				self._stop_note(x, y, midiNote)
-
-		
-		self._pressed_notes = new_pressed_notes
-		print("end _button_released: ", self.get_currently_playing_midi_notes())
 
 	def _stop_note(self, x,y, midiNote):
 		self.note_callback('note_off', midiNote, 0)
@@ -522,18 +525,35 @@ class GridInstrument:
 
 		print("NOTE OFF:\t", midiNote)
 
+
+	# Todo, we should actually 
+	def _all_buttons_released(self):
+		for midiNote in self._pressed_notes:
+			self.note_callback('note_off', midiNote, 0)
+
+		del self._pressed_notes[:]
+		del self._pressed_buttons[:]
+
+
 	def _update_scale(self, index=None, inc=0):
 		if index is not None:
 			self._active_scale["name"] = SCALE_NAMES[index]
-		self._active_scale["mode"] += inc #update scale mode 		(self.scale_mode)
-		mode_interval = self._active_scale["mode"]
-		rotated_scale = self._active_scale[-inc:] + self._active_scale[:-inc]
-		self._active_scale["span"] = [ (x+12 - mode_interval)%12 for x in rotated_scale ]
+			self._active_scale["span"] = SCALE[self._active_scale["name"]]
+			print("new scale: ", self._active_scale["span"])
+
+		if inc > 0:
+			self._active_scale["mode"] += inc #update scale mode 		(self.scale_mode)
+			mode_interval = self._active_scale["mode"]
+			rotated_scale = self._active_scale["span"][-inc:] + self._active_scale["span"][:-inc]
+			self._active_scale["span"] = [ (x+12 - mode_interval)%12 for x in rotated_scale ]
+			print(rotated_scale)
+		print(self._active_scale)
 
 	def _active_scale_button_pressed(self, x, y):
 		scale_index = (x - 1) + ((4 - y) * 8)
 		#self._active_scale["name"] = SCALE_NAMES[index]
 		self._update_scale(scale_index)
+		print(self._active_scale)
 		if self._chord_mode:
 			self._chord.update_scale(self._active_scale["name"])
 

@@ -22,6 +22,7 @@ SCALE = collections.OrderedDict([
 
 	#mid left
    
+	('Minor', 				[0, 2, 3, 5, 7, 8, 10]), #W H W [W] H b3 H
 	('Harmonic Minor', 		[0, 2, 3, 5, 7, 8, 11]), #W H W [W] H b3 H
     ('Melodic Minor', 		[0, 2, 3, 5, 7, 9, 11]), #W H W [W] W W H
     ('Neopolitan Minor', 	[0, 1, 3, 5, 7, 8, 11]), #H W W [W] H b3 H
