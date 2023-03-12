@@ -18,10 +18,11 @@ from .scales import *
 #chord(2, "7", sec="2") -> Leading chord of 2, add 7th -> vii7b5/ii
 #chord.update(MODES["something_else"])
 
-CRD = {
+TRIAD = {
 	#tonic: 0, subdom: 5, dom: 7
 	#No inversions, so chords may have intervals past 12
 	"I":	[0, 4, 7],
+	"i":	[0, 3, 7],
 	"II":	[2, 6, 9],
 	"ii":	[2, 5, 9],
     "III":	[4, 8, 11],
@@ -36,9 +37,6 @@ CRD = {
     "vii":	[11, 14, 18],
 }	
 
-MAJOR_MODES=["I", "bII", "II", "bIII", "III", "IV", "bV", "V", "bVI", "VI", "bVII", "VII"]
-
-MINOR_MODES=["i", "bii", "ii", "biii", "iii", "iv", "bv", "v", "bvi", "vi", "bvii", "vii"]
 
 def sus2(ch):
     return [ch[0], ch[0]+2, ch[2]]
@@ -133,15 +131,41 @@ class Chord:
 
 		#Get triad from scale
 		#NOTE: Getting triad by the scale degree only works of the scale is heptatonic (7 notes)
+		_7th_notation = ""
+		if in_scale:
+			self.chord = self.make_triad(degree)
+			if "maj7" in ext or "7" in ext or self.jazzy:
+				_7th_notation = self._get_7th(degree, self.chord, ext)
+
+				#add tones to the chord	
+			for tone in ext:
+				self.add_tone(self.chord, tone)
+
+			nat_dim = "b5" if (degree == 6 - list(MODAL_TRIADS).index(self.scale_mode)) else ""
+			chord_notation	= MODAL_TRIADS[self.scale_mode][degree] + _7th_notation + nat_dim + "".join(ext)
+		else:
+			self.chord, chord_notation = self.get_leading_chord(degree)
+			#remove 7th if not in 7th mode
+
+		
+		print("Playing: ", chord_notation)
+
+		return self.chord
+	
+	def make_triad(self, degree):
+		scale_length = len(SCALE[self.scale])
 		_3rd_degree = (degree+2)%scale_length
 		_5th_degree = (degree+4)%scale_length
-		_7th_degree = (degree+6)%scale_length
-		self.chord = [ 
-			['1',	SCALE[self.scale][degree]],
-			['3',	SCALE[self.scale][_3rd_degree] + (12 if degree+2 >= scale_length else 0)],
-			['5',	SCALE[self.scale][_5th_degree] + (12 if degree+4 >= scale_length else 0)]
-	   	]
 
+		return [ 
+			SCALE[self.scale][degree],
+			SCALE[self.scale][_3rd_degree] + (12 if degree+2 >= scale_length else 0),
+			SCALE[self.scale][_5th_degree] + (12 if degree+4 >= scale_length else 0)
+	   	]
+	
+	def _get_7th(self, degree, chord, ext=[]):
+		scale_length = len(SCALE[self.scale])
+		_7th_degree = (degree+6)%scale_length
 		nat_7th_note 	= SCALE[self.scale][_7th_degree] + (12 if degree > 1 else 0)
 		nat_7th_ivl 	= abs( SCALE[self.scale][degree] - nat_7th_note )
 		nat_7th 		= "7" if nat_7th_ivl in [2,10] else "maj7"
@@ -153,7 +177,7 @@ class Chord:
 		if alt_7th in ext:
 			ext.remove(alt_7th)
 			_7th_notation = alt_7th
-			self.chord.append([_7th_notation, alt_7th_note])
+			chord.append(alt_7th_note)
 
 		elif self.jazzy or nat_7th in ext:
 			try:
@@ -161,19 +185,10 @@ class Chord:
 			except ValueError:
 				pass
 			_7th_notation = nat_7th
-			self.chord.append([_7th_notation, nat_7th_note])
-			
-		#add tones to the chord	
-		for tone in ext:
-			self.add_tone(tone)
+			chord.append(nat_7th_note)
 
-		nat_dim = "b5" if (degree == 6 - list(MODAL_TRIADS).index(self.scale_mode)) else ""
-
-		chord_notation	= MODAL_TRIADS[self.scale_mode][degree] + _7th_notation + nat_dim + "".join(ext)
-		print("Playing: ", chord_notation)
-
-		return self.chord
-
+		return _7th_notation
+		
 	def toggle_jazzy(self):
 		self.jazzy = (not self.jazzy)
 
@@ -181,20 +196,60 @@ class Chord:
 		self.scale = scale
 		self.scale_mode = scale if scale in MODE_NAMES else "Ionian"
 
-	def add_tone(self, tone):
-		self.chord.append([tone, self.EXT_TONES[tone] + 12])
+	def add_tone(self, chord, tone):
+		chord.append(self.EXT_TONES[tone] + 12)
 
-	def rem_tone(self, tone):
-		self.remove(tone)
+	def rem_tone(self, chord, tone):
+		chord.remove(tone)
 
 	#If in_scale = False (parameter "degree" is not actually in current scale), find a good sounds leading chord
-	def get_leading_chord(self, interval, chord):
-		leading_chord = chord
+	#I guess this only happens in "Chromatic" mode... How bout that
+	def get_leading_chord(self, pressed_note):
+		leading_chord = []
+		chord_notation = ""
 		#in chromatic: Leading triads always dim, but for 7ths: 
-		# Maj -> min OR min -> dim = dim maj7, 
+		# (Imaj7 -> iim7 = biimaj7b5 )
 		# min -> min = o7, 
 		# Maj -> Maj = m7b5
+
+		#Find the notes to the left and right of pressed_note_interval (left_note, right_note)
+		left_note  = next(note for note in enumerate(reversed(SCALE[self.scale])) if note[1] < pressed_note)
+		right_note = next(note for note in enumerate(SCALE[self.scale]) if note[1] > pressed_note)
+
+		#if current scale isn't diatonic, we need to check which modal triad is missing
+		#if abs(left_note[1] - right_note[1])%3 == 0 and (left_note[1], right_note[0]) not in [(1,4), (6,9), (8,11)]:
+
+		#Maj -> min = maj7b5
+		left_triad  = SCALE_TRIADS[self.scale][left_note[0]]
+		right_triad = SCALE_TRIADS[self.scale][right_note[0]]
+		leading_chord = self.make_triad(left_note[0])
+		if 	(left_triad in MAJOR_MODES and right_triad in MINOR_MODES) or \
+			(left_triad in MINOR_MODES and right_triad in MAJOR_MODES):
+			#maj7b5
+			leading_chord.append(leading_chord[0]+12)
+			leading_chord[0] += 1
+
+		elif left_triad in MINOR_MODES and right_triad in MINOR_MODES:	
+			if	self._is_dim(self, right_note[0]): # maj7b5
+				leading_chord.append(leading_chord[0]+12)
+				leading_chord[0] += 1
+				leading_chord[1] += 1
+			else:	#dim7 ... if ii -> iii, could do iim7, v7/iii, iiim7
+				leading_chord.append(leading_chord[0]+10)
+				leading_chord[0] += 1
+				leading_chord[1] += 1
+		else: #left_triad in MAJOR_MODES and right_triad in MAJOR_MODES:	
+			#m7b5
+			leading_chord.append(leading_chord[0]+11)
+			leading_chord[0] += 1
+
+
+		return leading_chord, chord_notation
+		#If the scale doesn't have [(0,), (1, 2), (3, 4), (5,), (6, 7), (8, 9), (10, 11)]
+		# 0 == abs(left_note-right_note)%3 and (left_note, right_note) not in [(1,4), (6,9), (8,11)]
 		
+	def _is_dim(self, degree):
+		return (degree == 6 - list(MODAL_TRIADS).index(self.scale_mode))
 
 
 

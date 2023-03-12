@@ -110,7 +110,11 @@ class GridInstrument:
 	_pressed_notes = []
 	_pressed_buttons = []
 	_pressed_chords = []
-	_active_scale = 'Major'
+	_active_scale = {
+		"name": "Major",
+		"mode": "0",
+		"span": SCALE["Major"]
+	}
 	_grid_octave = 3
 	_scale_key = 0
 	
@@ -207,7 +211,7 @@ class GridInstrument:
 						self._scale_key = KEY_OPTIONS["settings"]["key"].index((x,y))
 						print("Key is ", self.NOTE_NAMES[self._scale_key])
 
-						self.GRID_LAYOUT[self.GRID_LAYOUT.index(self.SCALE_LAYOUT)][1] = len(SCALE[self._active_scale])
+						self.GRID_LAYOUT[self.GRID_LAYOUT.index(self.SCALE_LAYOUT)][1] = len(self._active_scale["span"])
 						self._color_buttons()
 						
 					elif (x,y) in KEY_OPTIONS["settings"]["scale"]:
@@ -233,7 +237,7 @@ class GridInstrument:
 		elif pressed and (x,y) == (9,3):
 			#Chord mode
 			if self._chord is None:
-				self._chord = Chord(self._active_scale)
+				self._chord = Chord(self._active_scale["name"])
 			self._chord_mode = not self._chord_mode
 			print("CHORD MODE ", ("ON" if self._chord_mode else "OFF"))	
 		#TODO: Change tuples to Enumeration for readability
@@ -300,7 +304,7 @@ class GridInstrument:
 	def _color_note_button(self, x, y, note_interval=1, pressed=False):
 		if pressed:
 			key = "note.pressed"
-		elif note_interval not in SCALE[self._active_scale]:
+		elif note_interval not in self._active_scale["span"]:
 			key = "note.out_scale"
 		elif note_interval == 0:
 			key = "note.root"
@@ -353,7 +357,7 @@ class GridInstrument:
 
 			scale_i = 0
 			for x,y in KEY_OPTIONS["settings"]["scale"]:
-				self._color_button(x,y, "settings.scale_" + ("on" if self._active_scale == SCALE_NAMES[scale_i] else "off") )
+				self._color_button(x,y, "settings.scale_" + ("on" if self._active_scale["name"] == SCALE_NAMES[scale_i] else "off") )
 				scale_i +=1
 			
 		self._color_button(9, 6, "note.pressed") # octave up
@@ -365,16 +369,16 @@ class GridInstrument:
 			self._color_button(2, 9, "note.pressed") # sample up
 
 	def _is_key_in_scale(self, key):
-		return key in SCALE[self._active_scale]
+		return key in self._active_scale["span"]
 
 	def _is_interval_in_scale(self, x, y):
-		return self._get_note_interval(x, y) in SCALE[self._active_scale]
+		return self._get_note_interval(x, y) in self._active_scale["span"]
 
 	def _minimum_note_on_board(self):
 		return ((self._grid_octave + 1) * 12) + self._scale_key
 
 	def _get_scale_length(self):
-		return len(SCALE[self._active_scale]) if self._layout_name != "Chromatic" else 12
+		return len(self._active_scale["span"]) if self._layout_name != "Chromatic" else 12
 
 	def _get_note_grid_index(self, x, y):
 		return (x-1) + (y-1) * self._layout_offset
@@ -385,11 +389,11 @@ class GridInstrument:
 		elif inv is not None:
 			print(inv)
 			#There exists a d in span Scale[self._active_scale] s.t. inv%d = 0 , thus inv % 12 will always be indexed
-			return SCALE[self._active_scale].index(inv % 12) + (self._get_scale_length() + 1) * (inv // 12)
+			return self._active_scale["span"].index(inv % 12) + (self._get_scale_length() + 1) * (inv // 12)
 
 	def _get_note_interval(self, x, y):
 		scale_degree = self._get_scale_degree(x, y)
-		return SCALE[self._active_scale][scale_degree] if self._layout_name != "Chromatic" else scale_degree
+		return self._active_scale["span"][scale_degree] if self._layout_name != "Chromatic" else scale_degree
 
 	def _get_midi_note(self, x, y):
 		note_octave = self._get_note_grid_index(x, y) // self._get_scale_length()
@@ -438,9 +442,9 @@ class GridInstrument:
 			if new_chord not in self._pressed_chords:
 				print("CHORD:", new_chord)
 				root = midiNote - btn_inv
-				for inv in new_chord:
-					note = root + inv[1]
-					new_btn_num = button_number - scale_degree + self._get_scale_degree(inv=inv[1])
+				for note_pos in new_chord:
+					note = root + note_pos
+					new_btn_num = button_number - scale_degree + self._get_scale_degree(inv=note_pos)
 					print("old btn num:\t", button_number, "\tNew button num:\t", new_btn_num)
 					ntx , nty = self._get_XY_by_button_number(new_btn_num)
 					print(ntx, nty)
@@ -495,10 +499,10 @@ class GridInstrument:
 				#turn off all associated notes
 				root = midiNote - btn_inv
 				released_chord = self._pressed_chords(-1)
-				for inv in released_chord:
-					note = root + inv[1]
-					print("CHORD NOTE: ", inv)
-					ntx , nty = self._get_XY_by_button_number(button_number - btn_inv + inv[1])
+				for note_pos in released_chord:
+					note = root + note_pos
+					print("CHORD NOTE: ", note_pos)
+					ntx , nty = self._get_XY_by_button_number(button_number - btn_inv + note_pos)
 					self._stop_note(ntx, nty, note)
 				self._pressed_chords.remove(released_chord)
 					
@@ -518,15 +522,20 @@ class GridInstrument:
 
 		print("NOTE OFF:\t", midiNote)
 
+	def _update_scale(self, index=None, inc=0):
+		if index is not None:
+			self._active_scale["name"] = SCALE_NAMES[index]
+		self._active_scale["mode"] += inc #update scale mode 		(self.scale_mode)
+		mode_interval = self._active_scale["mode"]
+		rotated_scale = self._active_scale[-inc:] + self._active_scale[:-inc]
+		self._active_scale["span"] = [ (x+12 - mode_interval)%12 for x in rotated_scale ]
 
 	def _active_scale_button_pressed(self, x, y):
-		index = (x - 1) + ((4 - y) * 8)
-		self._active_scale = SCALE_NAMES[index]
-		if self.debugging:
-			print("Musical mode is", self._active_scale)
-			pass
+		scale_index = (x - 1) + ((4 - y) * 8)
+		#self._active_scale["name"] = SCALE_NAMES[index]
+		self._update_scale(scale_index)
 		if self._chord_mode:
-			self._chord.update_scale(self._active_scale)
+			self._chord.update_scale(self._active_scale["name"])
 
 		self._all_buttons_released()
 		self._color_buttons()
