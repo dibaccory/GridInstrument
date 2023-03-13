@@ -64,7 +64,7 @@ class GridInstrument:
 
 	NOTE_COLORS = { 
 		"Mk1": { 
-			"note.pressed": [0, 63],    
+			"note.on": [0, 63],    
 			"note.root": [3, 0],      
 			"note.in_scale": [1, 1],
 			"note.out_scale": [0, 0],
@@ -79,7 +79,10 @@ class GridInstrument:
 
 		}, 
 		"Mk2": { 
-			"note.pressed": 		[0x3F, 0X3F, 0], 
+			"note.on": 				[0x3F, 0X3F, 0], 
+			#"note.on.alt": 				[0x1F, 0X1F, 0], 
+			"note.on.chord_root": 	[0x3F, 0X25, 0], 
+			#"note.on.chord_root.alt": 	[0x1F, 0X09, 0], 
 			"note.root": 			[0X20, 0, 0x3F], 
 			"note.in_scale": 		[0X03, 0X01, 10],
 			"note.out_scale":		[0, 0, 0],
@@ -303,7 +306,8 @@ class GridInstrument:
 
 	def _color_note_button(self, x, y, note_interval=1, pressed=False):
 		if pressed:
-			key = "note.pressed"
+			key = "note.on" + (".chord_root" if note_interval%12 == 0 else "")# + (".alt" if indirect else "")
+			print(key)
 		elif note_interval not in self._active_scale["span"]:
 			key = "note.out_scale"
 		elif note_interval == 0:
@@ -360,13 +364,13 @@ class GridInstrument:
 				self._color_button(x,y, "settings.scale_" + ("on" if self._active_scale["name"] == SCALE_NAMES[scale_i] else "off") )
 				scale_i +=1
 			
-		self._color_button(9, 6, "note.pressed") # octave up
-		self._color_button(9, 5, "note.pressed") # octave down
-		self._color_button(9, 8, "note.pressed") # settings
+		self._color_button(9, 6, "note.on") # octave up
+		self._color_button(9, 5, "note.on") # octave down
+		self._color_button(9, 8, "note.on") # settings
 		
 		if self.kid_mode is not True:
-			self._color_button(1, 9, "note.pressed") # sample down
-			self._color_button(2, 9, "note.pressed") # sample up
+			self._color_button(1, 9, "note.on") # sample down
+			self._color_button(2, 9, "note.on") # sample up
 
 	def _is_key_in_scale(self, key):
 		return key in self._active_scale["span"]
@@ -464,7 +468,7 @@ class GridInstrument:
 				ntx , nty = self._grid_index_to_XY(new_grid_index)
 				#ntx , nty = self._button_to_XY(new_grid_index)
 				print(ntx, nty)
-				self._play_note(ntx,nty, note, velocity)
+				self._play_note(ntx,nty, note, velocity, btn_inv)
 
 			if chord_notes not in self._pressed_chords:
 				self._pressed_chords.append(chord_notes)
@@ -523,14 +527,15 @@ class GridInstrument:
 		self._pressed_notes = new_pressed_notes
 		#print("end _button_released: ", self.get_currently_playing_midi_notes())
 
-	def _play_note(self, x,y, midi_note, velocity):
+	def _play_note(self, x,y, midi_note, velocity, pressed_note_interval):
 
 		if midi_note not in self._pressed_notes:
+			note_inv = self._get_note_interval(x, y)
 			self.note_callback("note_on", midi_note, velocity)
 			buttons = self._get_buttons_for_midi_note(x,y)
 
 			for btn_x, btn_y in buttons:
-				self._color_note_button(btn_x, btn_y, pressed=True)
+				self._color_note_button(btn_x, btn_y, abs(pressed_note_interval - note_inv), pressed=True)
 
 			self._pressed_notes.append(midi_note)
 		else:

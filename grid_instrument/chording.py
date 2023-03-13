@@ -231,7 +231,7 @@ class Chord:
 			leading_chord[0] += 1
 
 		elif left_triad in MINOR_MODES and right_triad in MINOR_MODES:	
-			if	self._is_dim(self, right_note[0]): # maj7b5
+			if	self._is_dim(right_note[0]): # maj7b5
 				leading_chord.append(leading_chord[0]+12)
 				leading_chord[0] += 1
 				leading_chord[1] += 1
