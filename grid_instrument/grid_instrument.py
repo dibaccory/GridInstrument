@@ -380,24 +380,30 @@ class GridInstrument:
 	def _get_scale_length(self):
 		return len(self._active_scale["span"]) if self._layout_name != "Chromatic" else 12
 
-	def _get_note_grid_index(self, x, y):
-		return (x-1) + (y-1) * self._layout_offset
+	def _XY_to_grid_index(self, x, y):
+		offset = self._layout_offset if self._layout_offset < 8 else 8
+		return (x-1) + (y-1) * offset
+
+	def _grid_index_to_XY(self, index):
+		offset = self._layout_offset if self._layout_offset < 8 else 8
+		return (index%offset + 1), (index//offset + 1)
 
 	def _get_scale_degree(self, x=None, y=None, inv=None):
 		if x is not None and y is not None:
-			return self._get_note_grid_index(x,y) % self._get_scale_length()
+			return self._XY_to_grid_index(x,y) % self._get_scale_length()
 		elif inv is not None:
 			#print(inv)
 			#There exists a d in span Scale[self._active_scale] s.t. inv%d = 0 , thus inv % 12 will always be indexed
-			#print("Scale degree of inv ", inv, " :\t", self._active_scale["span"].index(inv % 12) + (self._get_scale_length() + 1) * (inv // 12))
-			return self._active_scale["span"].index(inv % 12) + (self._get_scale_length() + 8 - self._layout_offset) * (inv // 12)
+			deg = self._active_scale["span"].index(inv % 12) + (self._get_scale_length()) * (inv // 12)
+			#print("Scale degree of inv ", inv, ":\t", deg)
+			return deg
 
 	def _get_note_interval(self, x, y):
 		scale_degree = self._get_scale_degree(x, y)
 		return self._active_scale["span"][scale_degree] if self._layout_name != "Chromatic" else scale_degree
 
 	def _get_midi_note(self, x, y):
-		note_octave = self._get_note_grid_index(x, y) // self._get_scale_length()
+		note_octave = self._XY_to_grid_index(x, y) // self._get_scale_length()
 		return self._minimum_note_on_board() + self._get_note_interval(x, y) + 12 * note_octave
 
 	def get_note_info(self, x, y):
@@ -415,47 +421,55 @@ class GridInstrument:
 		possible_btns = [(x-2*os,y+2), (x-os,y+1), (x,y), (x+os,y-1), (x+2*os, y-2)]
 		return [ btn for btn in possible_btns if self._in_matrix_bounds(btn[0], btn[1]) ]
 	
-	def _get_XY_by_button_number(self, btn):
+	def _button_to_XY(self, btn):
 		return (btn%8 + 1), (btn//8 + 1)
 
 	def get_currently_playing_midi_notes(self):
-		midiNotes = []
-		for buttonNumber in self._pressed_buttons:
-			x = int(math.floor(buttonNumber % 8)) + 1
-			y = (buttonNumber // 8) + 1
+		notes = []
+		for button_number in self._pressed_buttons:
+			x, y = self._button_to_XY(button_number)
 			midi_note = self._get_midi_note(x, y)
-			if midi_note not in midiNotes:
-				midiNotes.append(midi_note)
-		return midiNotes
+			if midi_note not in notes:
+				notes.append(midi_note)
+		return notes
 
 	# This takes 1-based coordinates with 1,1 being the lower left button
 	def _button_pressed(self, x, y, velocity):
 		
 		button_number = (x-1)  + ((y-1) * 8)
-		print(f"Button:\t{button_number}\t ({x},{y})")
+		pressed_grid_index = self._XY_to_grid_index(x, y)
+		print(f"Button:\t{button_number}\t index\t: {pressed_grid_index} \t(x,y):\t({x},{y})")
 		self._pressed_buttons.append(button_number)
 
-		midiNote = self._get_midi_note(x, y)
+		pressed_MIDI_note = self._get_midi_note(x, y)
 		scale_degree = self._get_scale_degree(x, y)
 		btn_inv = self._get_note_interval(x, y)
 
 		if self._chord_mode:
+
 			new_chord = self._chord(scale_degree, in_scale=self._is_interval_in_scale(x,y))
-			if new_chord not in self._pressed_chords:
-				print("CHORD:", new_chord)
-				root = midiNote - btn_inv
-				for note_pos in new_chord:
-					note = root + note_pos
-					print(f"new_btn_num = {button_number} - {scale_degree} + self._get_scale_degree(inv={note_pos})")
-					new_btn_num = button_number - scale_degree + self._get_scale_degree(inv=note_pos)
-					print("old btn num:\t", button_number, "\tNew button num:\t", new_btn_num)
-					ntx , nty = self._get_XY_by_button_number(new_btn_num)
-					print(ntx, nty)
-					self._play_note(ntx,nty, note, velocity)
-				self._pressed_chords.append(new_chord)
+			root = pressed_MIDI_note - btn_inv
+			chord_notes = [root + i for i in new_chord]
+			#if chord_notes not in self._pressed_chords:
+			print("CHORD:", new_chord)
+		
+			#TODO: Pythonize
+			for note_pos in new_chord:
+				note = root + note_pos
+				#chord_notes.append(note)
+				#print(f"new_btn_num = {button_number} - {scale_degree} + self._get_scale_degree(inv={note_pos})")
+				new_grid_index = pressed_grid_index - scale_degree + self._get_scale_degree(inv=note_pos)
+				print("\tNew grid index\t", new_grid_index)
+				ntx , nty = self._grid_index_to_XY(new_grid_index)
+				#ntx , nty = self._button_to_XY(new_grid_index)
+				print(ntx, nty)
+				self._play_note(ntx,nty, note, velocity)
+
+			if chord_notes not in self._pressed_chords:
+				self._pressed_chords.append(chord_notes)
 
 		else:
-			self._play_note(x,y, midiNote, velocity)
+			self._play_note(x,y, pressed_MIDI_note, velocity)
 
 		#print("end _button_pressed: ", self.get_currently_playing_midi_notes())
 
@@ -466,34 +480,37 @@ class GridInstrument:
 		if button_number not in self._pressed_buttons:
 			return
 
-		midiNote = self._get_midi_note(x, y)
+		released_MIDI_note = self._get_midi_note(x, y)
 		#print("Pressed buttons: ", self._pressed_buttons)
 		self._pressed_buttons.remove(button_number)
 		new_pressed_notes = self.get_currently_playing_midi_notes()
 		scale_degree = self._get_scale_degree(x, y)
 		btn_inv = self._get_note_interval(x, y)
 
-		if midiNote not in new_pressed_notes:
-			if self._chord_mode:
-				#turn off all associated notes
-				root = midiNote - btn_inv
-				try:
-					released_chord = self._pressed_chords[-1]
-				except IndexError:
-					print("How tf is this empty?\tpressed chord", self._pressed_chords)
-					return
+		if self._chord_mode:
+			pressed_grid_index = self._XY_to_grid_index(x, y)
 
-				for note_pos in released_chord:
-					note = root + note_pos
-					new_btn_num = button_number - scale_degree + self._get_scale_degree(inv=note_pos)
-					#print("RELEASED old btn num:\t", button_number, "\tNew button num:\t", new_btn_num)
-					ntx , nty = self._get_XY_by_button_number(new_btn_num)
+			released_chord = self._chord(scale_degree, in_scale=self._is_interval_in_scale(x,y))
+			root = released_MIDI_note - btn_inv
+			chord_notes = [root + i for i in released_chord]
+			for note_pos in released_chord:
+				note = root + note_pos
+				#chord_notes.append(note)
+				if note not in new_pressed_notes:
+					new_grid_index = pressed_grid_index - scale_degree + self._get_scale_degree(inv=note_pos)
+					ntx , nty = self._grid_index_to_XY(new_grid_index)
+					#ntx , nty = self._button_to_XY(new_grid_index)
 					self._stop_note(ntx, nty, note)
-				self._pressed_chords.remove(released_chord)
 					
-			else:
-				self._stop_note(x, y, midiNote)
+				else:
+					#keep playing if note is still in active chord
+					pass
 
+			if chord_notes in self._pressed_chords:
+				self._pressed_chords.remove(chord_notes)
+
+		elif released_MIDI_note not in new_pressed_notes:
+			self._stop_note(x, y, released_MIDI_note)
 		
 		self._pressed_notes = new_pressed_notes
 		#print("end _button_released: ", self.get_currently_playing_midi_notes())
@@ -513,7 +530,7 @@ class GridInstrument:
 			self.note_callback("note_off", midiNote, velocity)
 			self.note_callback("note_on", midiNote, velocity)
 
-		print("NOTE ON:\t", midiNote)
+		#print("NOTE ON:\t", midiNote)
 
 
 	def _stop_note(self, x,y, midiNote):
@@ -523,7 +540,7 @@ class GridInstrument:
 		for btn_x, btn_y in buttons:
 			self._color_note_button(btn_x, btn_y, self._get_note_interval(btn_x, btn_y))
 
-		print("NOTE OFF:\t", midiNote)
+		#print("NOTE OFF:\t", midiNote)
 
 
 	# Todo, we should actually 

@@ -202,6 +202,7 @@ class Chord:
 	def rem_tone(self, chord, tone):
 		chord.remove(tone)
 
+	#TODO GET THIS TO A FUNCTIONAL STATE FOR CHROMATIC
 	#If in_scale = False (parameter "degree" is not actually in current scale), find a good sounds leading chord
 	#I guess this only happens in "Chromatic" mode... How bout that
 	def get_leading_chord(self, pressed_note):
