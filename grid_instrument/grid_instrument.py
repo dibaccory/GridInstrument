@@ -459,6 +459,7 @@ class GridInstrument:
 				#chord_notes.append(note)
 				#print(f"new_btn_num = {button_number} - {scale_degree} + self._get_scale_degree(inv={note_pos})")
 				new_grid_index = pressed_grid_index - scale_degree + self._get_scale_degree(inv=note_pos)
+				#new_btn_num = button_number - scale_degree + self._get_scale_degree(inv=note_pos)
 				print("\tNew grid index\t", new_grid_index)
 				ntx , nty = self._grid_index_to_XY(new_grid_index)
 				#ntx , nty = self._button_to_XY(new_grid_index)
@@ -483,21 +484,28 @@ class GridInstrument:
 		released_MIDI_note = self._get_midi_note(x, y)
 		#print("Pressed buttons: ", self._pressed_buttons)
 		self._pressed_buttons.remove(button_number)
-		new_pressed_notes = self.get_currently_playing_midi_notes()
 		scale_degree = self._get_scale_degree(x, y)
 		btn_inv = self._get_note_interval(x, y)
 
 		if self._chord_mode:
-			pressed_grid_index = self._XY_to_grid_index(x, y)
-
 			released_chord = self._chord(scale_degree, in_scale=self._is_interval_in_scale(x,y))
 			root = released_MIDI_note - btn_inv
+
 			chord_notes = [root + i for i in released_chord]
+
+			if chord_notes in self._pressed_chords:
+				self._pressed_chords.remove(chord_notes)
+
+			new_pressed_notes = [note_interval for chord in self._pressed_chords for note_interval in chord]
+
+			pressed_grid_index = self._XY_to_grid_index(x, y)
+
 			for note_pos in released_chord:
 				note = root + note_pos
 				#chord_notes.append(note)
 				if note not in new_pressed_notes:
 					new_grid_index = pressed_grid_index - scale_degree + self._get_scale_degree(inv=note_pos)
+					#new_btn_num = button_number - scale_degree + self._get_scale_degree(inv=note_pos)
 					ntx , nty = self._grid_index_to_XY(new_grid_index)
 					#ntx , nty = self._button_to_XY(new_grid_index)
 					self._stop_note(ntx, nty, note)
@@ -506,47 +514,47 @@ class GridInstrument:
 					#keep playing if note is still in active chord
 					pass
 
-			if chord_notes in self._pressed_chords:
-				self._pressed_chords.remove(chord_notes)
-
-		elif released_MIDI_note not in new_pressed_notes:
-			self._stop_note(x, y, released_MIDI_note)
+			
+		else:
+			new_pressed_notes = self.get_currently_playing_midi_notes()
+			if released_MIDI_note not in new_pressed_notes:
+				self._stop_note(x, y, released_MIDI_note)
 		
 		self._pressed_notes = new_pressed_notes
 		#print("end _button_released: ", self.get_currently_playing_midi_notes())
 
-	def _play_note(self, x,y, midiNote, velocity):
+	def _play_note(self, x,y, midi_note, velocity):
 
-		if midiNote not in self._pressed_notes:
-			self.note_callback("note_on", midiNote, velocity)
+		if midi_note not in self._pressed_notes:
+			self.note_callback("note_on", midi_note, velocity)
 			buttons = self._get_buttons_for_midi_note(x,y)
 
 			for btn_x, btn_y in buttons:
 				self._color_note_button(btn_x, btn_y, pressed=True)
 
-			self._pressed_notes.append(midiNote)
+			self._pressed_notes.append(midi_note)
 		else:
 			#play note again
-			self.note_callback("note_off", midiNote, velocity)
-			self.note_callback("note_on", midiNote, velocity)
+			self.note_callback("note_off", midi_note, velocity)
+			self.note_callback("note_on", midi_note, velocity)
 
-		#print("NOTE ON:\t", midiNote)
+		#print("NOTE ON:\t", midi_note)
 
 
-	def _stop_note(self, x,y, midiNote):
-		self.note_callback('note_off', midiNote, 0)
+	def _stop_note(self, x,y, midi_note):
+		self.note_callback('note_off', midi_note, 0)
 		buttons = self._get_buttons_for_midi_note(x,y)
 
 		for btn_x, btn_y in buttons:
 			self._color_note_button(btn_x, btn_y, self._get_note_interval(btn_x, btn_y))
 
-		#print("NOTE OFF:\t", midiNote)
+		#print("NOTE OFF:\t", midi_note)
 
 
 	# Todo, we should actually 
 	def _all_buttons_released(self):
-		for midiNote in self._pressed_notes:
-			self.note_callback('note_off', midiNote, 0)
+		for midi_note in self._pressed_notes:
+			self.note_callback('note_off', midi_note, 0)
 
 		del self._pressed_notes[:]
 		del self._pressed_buttons[:]
