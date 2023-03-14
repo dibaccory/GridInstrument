@@ -152,17 +152,13 @@ class Chord:
 		triads = []
 		numerals = []
 
-		for i, note_inv in enumerate(self.scale["span"]):
+		for note_inv in self.scale["span"]:
 			#check if there is a P5 interval, else it will be diminished. Forced m3
 			note_inv_has_P5 = 0 if ( (note_inv+7) % 12 in self.scale["span"] ) else -1
 			note_inv_has_M3 = 0 if ( (note_inv+4) % 12 in self.scale["span"] and note_inv_has_P5 == 0 ) else -1
 
 			_5th_interval 	= ( note_inv+7 + note_inv_has_P5 ) 
-			#_5th_interval  += (12 if _5th_interval >= scale_length else 0) #% scale_length 
-
 			_3rd_interval 	= ( note_inv+4 + note_inv_has_M3 ) 
-			#_3rd_interval  += (12 if _3rd_interval >= scale_length else 0) #% scale_length 
-
 			#_5th_degree = self.scale["span"].index( _5th_interval % scale_length )
 
 			triad = [note_inv, _3rd_interval, _5th_interval] 
