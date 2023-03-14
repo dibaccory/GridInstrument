@@ -10,14 +10,14 @@ SCALE = collections.OrderedDict([
     #III -> 0 1 3 5 7 8 10
     ('Harmonic Major',		[0, 2, 4, 5, 7, 8, 11]), # W W H [W] H b3 H  - asymmetric
     #III -> 0 1 3 4 7 8 10	flat 4th
-    ('Melodic Major', 		[0, 2, 4, 5, 7, 8, 10]), # W W H [W] H W W - symmetric
+    ('Melodic Major', 		[0, 2, 4, 5, 7, 8, 10]), # W W H [W] H W W - symmetric... Lydian of Melodic Minor??
     #III -> 0 1 3 4 6 8 10 	flat 4th, 5th
     ('Neopolitan Major', 	[0, 1, 3, 5, 7, 9, 11]), # H W W [W] W W H - symmetric
     #III -> 0 2 4 6 8 9 10
     
-	#top right
+	#top right DERIVED SCALES
 	('Major Blues',			[0, 2, 3, 4, 7, 9]),
-	('Major Pentatonic', 	[0, 2, 4, 7, 9]),
+	('Major Pentatonic', 		[0, 2, 4, 7, 9]),
     ('Whole Tone', 			[0, 2, 4, 6, 8, 10]),
 
 	#mid left
@@ -27,7 +27,7 @@ SCALE = collections.OrderedDict([
     ('Melodic Minor', 		[0, 2, 3, 5, 7, 9, 11]), #W H W [W] W W H
     ('Neopolitan Minor', 	[0, 1, 3, 5, 7, 8, 11]), #H W W [W] H b3 H
     
-	#mid right
+	#mid right DERIVED SCALES
 	('Minor Blues',			[0, 3, 5, 6, 7, 10]),
 	('Minor Pentatonic', 	[0, 3, 5, 7, 10]),
 
@@ -41,9 +41,9 @@ SCALE = collections.OrderedDict([
     
 	
 
-	('9 Harmonic Major Blues',		[0, 2, 3, 5, 6, 7, 9, 10, 11]), #Based on Harmonic Major (Mixolydian, add b3, b7)
+	('9 Harmonic Major Blues',		[0, 2, 3, 5, 6, 7, 9, 10, 11]), #Based on Harmonic Major (Lydian, add b3, b7)
     #3 -> 0 2 3 4 6 7 8 9 10 
-    ('9 Melodic Major Blues',		[0, 2, 3, 4, 5, 7, 9, 10, 11]),
+    ('9 Melodic Major Blues',		[0, 2, 3, 4, 5, 7, 9, 10, 11]), # I ii bIII iii
     
 	('Diminished', 			[0, 1, 3, 4, 6, 7, 9, 10]),
     ('Whole-half', 			[0, 2, 3, 5, 6, 8, 9, 11]),
@@ -91,8 +91,10 @@ SCALE_NAMES = list(SCALE.keys())
 
 #NOTE: Derived scale: Nine-note Blues, applied: Major (add b3, b7)
 #-> Degree:		1		2		b3	
-#->	Intervals:	0 		2 		3	 		5 		6 			7 		9 		10 			11
+#->	Intervals:	0 		2 		3	 		5 		*6* 		7 		9 		*10* 			11
 #-> Chords:		im7		II7		bIIIM7		IV7		viio7/V		vm7		vim7	VM7/bIII	viiM7b5
+#->	Intervals:	0 		2 		*3*	 		4 		5 			7 		9 		*10* 			11
+#-> Chords:		IM7		iim7	bIIIM7		iiiM7	IVM7		Vm7		vim7	bVIIM7		viiM7b5
 MODE_NAMES = ["Ionian", "Dorian", "Phrygian", "Lydian", "Mixolydian", "Aeolian", "Locrian"]
 
 #NOTE: triads on the / diagonal are all naturally diminished. This will be added in the class Chord
@@ -124,7 +126,8 @@ numeral_intervals = [(0,), (1, 2), (3, 4), (5,), (6, 7), (8, 9), (10, 11)]
 #Mode 2 (1):	I | bII	| bIII | III | iv |	v | bvi	| VI   | bvii |	0 1 3 4 5 7 8 9  10 
 
 SCALE_TRIADS = collections.OrderedDict([
-	('Major',		MODAL_TRIADS["Ionian"]),
+	('Major',				MODAL_TRIADS["Ionian"]),
+    ('Harmonic Major',		["I", "ii", "iii", "iv", "V", "bVI", "vii"])
     #TODO... all of these numerals LOL
 	#('Diminished', 	[0, 1, 3, 4, 6, 7, 9, 10]),
 	#('Whole-half', 	[0, 2, 3, 5, 6, 8, 9, 11]),
