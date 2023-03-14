@@ -17,6 +17,7 @@ from .scales import *
 #chord(1, "7", mod=4) -> Modal interchange of I using mode index 4 (Mixolydian) -> I7
 #chord(2, "7", sec="1") -> Dominant chord of 2, add 7th -> V7/ii
 #chord(2, "7", sec="2") -> Leading chord of 2, add 7th -> vii7b5/ii
+#C minor is C aeolian (Eb scale) -> C Major Ionian- Mode I vs C Minor Mixolydian- Mode V (F minor OR F Major Aeolian)
 #chord.update(MODES["something_else"])
 
 TRIAD = {

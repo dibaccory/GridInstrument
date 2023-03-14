@@ -2,15 +2,15 @@ import collections
 from enum import Enum
 
 SCALE = collections.OrderedDict([
-    #first two rows: major on top, minor on bottoms
 
 	#Top left
 	('Major',				[0, 2, 4, 5, 7, 9, 11]), # W W H [W] W W H - parallel
     #III -> 0 1 3 5 7 8 10
+	('Melodic Major', 		[0, 2, 4, 5, 7, 8, 10]), # W W H [W] H W W - symmetric... Lydian of Melodic Minor??
+    #III -> 0 1 3 4 6 8 10 	flat 4th, 5th
+
     ('Harmonic Major',		[0, 2, 4, 5, 7, 8, 11]), # W W H [W] H b3 H  - asymmetric
     #III -> 0 1 3 4 7 8 10	flat 4th
-    ('Melodic Major', 		[0, 2, 4, 5, 7, 8, 10]), # W W H [W] H W W - symmetric... Lydian of Melodic Minor??
-    #III -> 0 1 3 4 6 8 10 	flat 4th, 5th
     ('Neopolitan Major', 	[0, 1, 3, 5, 7, 9, 11]), # H W W [W] W W H - symmetric
     #III -> 0 2 4 6 8 9 10
     
