@@ -17,26 +17,105 @@ except ImportError:
 		sys.exit("error loading launchpad.py")
 
 
+SCALE_NAMES = list(SCALE.keys())
 
+SETTINGS = {
+	"key": sorted([
+				(1,7),  (2,7),  	(4,7), (5,7), (6,7), 
+			(1,6), (2,6), (3,6), (4,6), (5,6), (6,6), (7,6)
+		]),
+	"scale": {
+		"base_major": [("Major", 		(2,2))],
+		"major": [
+			("Melodic Major", 			(1,3)),
+			("Harmonic Major",	 		(2,3)),
+			("Neopolitan Major", 		(3,3)),
+			("Major Pentatonic", 		(1,2)),
+		],
+		"jazz_major": [
+			("9 Melodic Major Blues",	(1,1)),
+			("Bebop Major",	 			(2,1)),
+			("Bebop Dominant", 			(3,1)),
+			("Major Blues", 			(3,2)),
+		],
 
-KEY_OPTIONS = {
-	"settings": {
-		"key": sorted([
-				 	(1,7),  (2,7),  	(4,7), (5,7), (6,7), 
-				(1,6), (2,6), (3,6), (4,6), (5,6), (6,6), (7,6)
-			]),
-		"scale": {
-			"major": [ ],
-			"minor": [],
-			
-			(1,4), (2,4), (3,4), (4,4), (5,4), (6,4), (7,4), (8,4),
-			(1,3), (2,3), (3,3), (4,3), (5,3), (6,3), (7,3), (8,3),
-			(1,1), (2,1), (3,2), (4,2), (5,2), (6,2), (7,2), (8,2),
-		}
-		#"layout": [(8,6), (8,7), (8,8)] update to left/right arrows?
-	}
-	#TODO note mode options
+		"base_minor": [("Minor", 		(2,2))],
+		"minor": [
+			("Melodic Minor", 			(8,3)),
+			("Harmonic Minor",	 		(7,3)),
+			("Neopolitan Minor", 		(6,3)),
+			("Minor Pentatonic", 		(8,2)),
+		],
+		"jazz_minor": [
+			("9 Melodic Major Blues",	(8,1)),
+			("Bebop Major",	 			(7,1)),
+			("Bebop Dominant", 			(6,1)),
+			("Major Blues", 			(6,2)),
+		]
+	},
+
+	"mode": [
+		("reset", 	(4,3))
+		("up", 		(5,3))
+		("down", 	(4,2))
+		("fif", 	(5,2))
+	]
+	#"layout": [(8,6), (8,7), (8,8)] update to left/right arrows?
 }
+
+NOTE_COLORS = {
+	"note": {
+            "on": 			[0X3F, 0X3F, 0X00],
+	        "root": 		[0X20, 0X00, 0X3F],
+            "tonic": 		[0X3F, 0X25, 0X00],
+            "in_scale": 	[0X03, 0X01, 0X10],
+            "out_scale": 	[0X00, 0X00, 0X00]
+        },
+	"settings": {
+        "scale_on": 			[0X00, 0X28, 0X00],
+		"scale_off": 			[0X00, 0X0A, 0X00],
+        "scale_on": 			[0X00, 0X02, 0X3F],
+		"scale_off": 			[0x01, 0X01, 0X05],
+		
+	}
+}
+
+NOTE_COLORS_ol = { 
+	"Mk1": { 
+		"note.on": [0, 63],    
+		"note.root": [3, 0],      
+		"note.in_scale": [1, 1],
+		"note.out_scale": [0, 0],
+		"settingsKeyOff": [0, 4],
+		"settingsKeyOn":  [0, 20],
+		"settings.key_off": [1, 1],
+		"settings.key_on":  [3, 3],
+		"settings.scale_off": [0, 1],
+		"settings.scale_on":  [0, 3],
+		"settings.layout_off": [1, 0],
+		"settings.layout_on":  [3, 0],
+
+	}, 
+	"Mk2": { 
+		
+		"note.on": 				[0x3F, 0X3F, 0], 
+		#"note.on.alt": 				[0x1F, 0X1F, 0], 
+		"note.on.chord_root": 	[0x3F, 0X25, 0], 
+		#"note.on.chord_root.alt": 	[0x1F, 0X09, 0], 
+		"note.root": 			[0X20, 0, 0x3F], 
+		"note.in_scale": 		[0X03, 0X01, 10],
+		"note.out_scale":		[0, 0, 0],
+		"settingsKeyOff": 		[0, 0X0A, 0],
+		"settingsKeyOn":  		[0, 0X28, 0],
+		"settings.key_off": 	[0X05, 0, 0],
+		"settings.key_on":  	[0X3F, 0X00, 0],
+		"settings.scale_off": 	[0x01, 0X01, 0X05],
+		"settings.scale_on":  	[0, 0X02, 0X3F],
+		"settings.layout_off": 	[0, 0, 0X0F],
+		"settings.layout_on":	[0, 0, 0X3F],
+	}
+}
+
 #TODO: MidiMatrix
 class GridInstrument:
 
@@ -62,40 +141,10 @@ class GridInstrument:
 
 	NOTE_NAMES = ["C", "C#", "D", "Eb", "E", "F", "F#", "G", "G#", "A", "A#", "B"]
 
-	NOTE_COLORS = { 
-		"Mk1": { 
-			"note.on": [0, 63],    
-			"note.root": [3, 0],      
-			"note.in_scale": [1, 1],
-			"note.out_scale": [0, 0],
-			"settingsKeyOff": [0, 4],
-			"settingsKeyOn":  [0, 20],
-			"settings.key_off": [1, 1],
-			"settings.key_on":  [3, 3],
-			"settings.scale_off": [0, 1],
-			"settings.scale_on":  [0, 3],
-			"settings.layout_off": [1, 0],
-			"settings.layout_on":  [3, 0],
+	
 
-		}, 
-		"Mk2": { 
-			"note.on": 				[0x3F, 0X3F, 0], 
-			#"note.on.alt": 				[0x1F, 0X1F, 0], 
-			"note.on.chord_root": 	[0x3F, 0X25, 0], 
-			#"note.on.chord_root.alt": 	[0x1F, 0X09, 0], 
-			"note.root": 			[0X20, 0, 0x3F], 
-			"note.in_scale": 		[0X03, 0X01, 10],
-			"note.out_scale":		[0, 0, 0],
-			"settingsKeyOff": 		[0, 0X0A, 0],
-			"settingsKeyOn":  		[0, 0X28, 0],
-			"settings.key_off": 	[0X05, 0, 0],
-			"settings.key_on":  	[0X3F, 0X00, 0],
-			"settings.scale_off": 	[0x01, 0X01, 0X05],
-			"settings.scale_on":  	[0, 0X02, 0X3F],
-			"settings.layout_off": 	[0, 0, 0X0F],
-			"settings.layout_on":	[0, 0, 0X3F],
-		}
-	}
+
+
 
 	# Settings
 	note_callback = None
@@ -210,15 +259,15 @@ class GridInstrument:
 				elif self._launchpad_mode == "settings":
 					self._all_buttons_released()
 					#(x,y) < (8,6)
-					if (x,y) in KEY_OPTIONS["settings"]["key"] and pressed:
+					if (x,y) in SETTINGS["key"] and pressed:
 						# Active Key
-						self._scale_key = KEY_OPTIONS["settings"]["key"].index((x,y))
+						self._scale_key = SETTINGS["key"].index((x,y))
 						print("Key is ", self.NOTE_NAMES[self._scale_key])
 
 						self.GRID_LAYOUT[self.GRID_LAYOUT.index(self.SCALE_LAYOUT)][1] = len(self._active_scale["span"])
 						self._color_buttons()
 						
-					elif (x,y) in KEY_OPTIONS["settings"]["scale"]:
+					elif (x,y) in SETTINGS["scale"]:
 						if pressed:
 							self._highlight_keys_in_scale()
 						else:
@@ -318,24 +367,30 @@ class GridInstrument:
 		self._color_button(x, y, key)
 
 
-	def _color_button(self, x, y, buttonType):
+	def _color_button(self, x,y, color):
 		lpX = x - 1
 		lpY = -1 * (y - 9)
+		self.lp.LedCtrlXY(lpX, lpY, *color)
 
-		if self._launchpad_model == "Mk1":
-			colorSet = "Mk1"
-			self.lp.LedCtrlXY(lpX, lpY, self.NOTE_COLORS[colorSet][buttonType][0], self.NOTE_COLORS[colorSet][buttonType][1])
-		else:
-			colorSet = "Mk2"
-			self.lp.LedCtrlXY(lpX, lpY, self.NOTE_COLORS[colorSet][buttonType][0], self.NOTE_COLORS[colorSet][buttonType][1], self.NOTE_COLORS[colorSet][buttonType][2])
+
+	#def _color_button(self, x, y, buttonType):
+	#	lpX = x - 1
+	#	lpY = -1 * (y - 9)
+#
+	#	if self._launchpad_model == "Mk1":
+	#		colorSet = "Mk1"
+	#		self.lp.LedCtrlXY(lpX, lpY, NOTE_COLORS[colorSet][buttonType][0], NOTE_COLORS[colorSet][buttonType][1])
+	#	else:
+	#		colorSet = "Mk2"
+	#		self.lp.LedCtrlXY(lpX, lpY, NOTE_COLORS[colorSet][buttonType][0], NOTE_COLORS[colorSet][buttonType][1], NOTE_COLORS[colorSet][buttonType][2])
 
 	def _scroll_text(self, text, colorKey):
 		if self._launchpad_model == "Mk1":
 			colorSet = "Mk1"
-			self.lp.LedCtrlString(text, self.NOTE_COLORS[colorSet][colorKey][0], self.NOTE_COLORS[colorSet][colorKey][1], self.lp.SCROLL_LEFT, 20)
+			self.lp.LedCtrlString(text, NOTE_COLORS[colorSet][colorKey][0], NOTE_COLORS[colorSet][colorKey][1], self.lp.SCROLL_LEFT, 20)
 		else:
 			colorSet = "Mk2"
-			self.lp.LedCtrlString(text, self.NOTE_COLORS[colorSet][colorKey][0], self.NOTE_COLORS[colorSet][colorKey][1], self.NOTE_COLORS[colorSet][colorKey][2], self.lp.SCROLL_LEFT, 20)
+			self.lp.LedCtrlString(text, NOTE_COLORS[colorSet][colorKey][0], NOTE_COLORS[colorSet][colorKey][1], NOTE_COLORS[colorSet][colorKey][2], self.lp.SCROLL_LEFT, 20)
 
 	#Colors whole layout on mode change. Like an initalization for each mode
 	def _color_buttons(self):
@@ -355,14 +410,22 @@ class GridInstrument:
 			#for i in GRID_KEY.len
 			#	colorbutton(GRID_KEY[i], "on" if _gridkey = i else "pff")
 			key_i = 0
-			for x,y in KEY_OPTIONS["settings"]["key"]:
+			for x,y in SETTINGS["key"]:
 				self._color_button(x,y, "settings.key_" + ("on" if self._scale_key == key_i else "off") )
 				key_i +=1
 
 			scale_i = 0
-			for x,y in KEY_OPTIONS["settings"]["scale"]:
-				self._color_button(x,y, "settings.scale_" + ("on" if self._active_scale["name"] == SCALE_NAMES[scale_i] else "off") )
+			for scale_type, ar in SETTINGS["scale"].items():
+
+				self._color_button(x,y, NOTE_COLORS[self._launchpad_model][scale_type][scale_name])#"settings.scale_" + ("on" if self._active_scale["name"] == SCALE_NAMES[scale_i] else "off") )
 				scale_i +=1
+
+			#scale_i = 0
+			#for scale_type, scale_coords in KEY_OPTIONS["settings"]["scale"].items():
+			#	scale_key_on = f"settings.scale.{scale_type}.on"
+			#	scale_key_off = f"settings.scale.{scale_type}.off"
+			#	self._color_button(*scale_coords, scale_key_on if self._active_scale["name"] == SCALE_NAMES[scale_i] else scale_key_off)
+			#	scale_i += 1
 			
 		self._color_button(9, 6, "note.on") # octave up
 		self._color_button(9, 5, "note.on") # octave down
@@ -374,7 +437,7 @@ class GridInstrument:
 
 	def _is_key_in_scale(self, key):
 		return key in self._active_scale["span"]
-
+	
 	def _is_interval_in_scale(self, x, y):
 		return self._get_note_interval(x, y) in self._active_scale["span"]
 
@@ -610,6 +673,6 @@ class GridInstrument:
 		for key in range(root+1, root+11):
 			key %= 12
 			if self._is_key_in_scale(key):
-				x = KEY_OPTIONS["settings"]["key"][key][0]
-				y = KEY_OPTIONS["settings"]["key"][key][1]
+				x = SETTINGS["key"][key][0]
+				y = SETTINGS["key"][key][1]
 				self._color_button(x, y, "note.in_scale")

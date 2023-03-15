@@ -4,45 +4,45 @@ from enum import Enum
 SCALE = collections.OrderedDict([
 
 	#Top left
-	('Major',				[0, 2, 4, 5, 7, 9, 11]), # W W H [W] W W H - parallel
+	('Major',					[0, 2, 4, 5, 7, 9, 11]), # W W H [W] W W H - parallel
     #III -> 0 1 3 5 7 8 10
-	('Melodic Major', 		[0, 2, 4, 5, 7, 8, 10]), # W W H [W] H W W - symmetric... Lydian of Melodic Minor??
+	('Melodic Major', 			[0, 2, 4, 5, 7, 8, 10]), # W W H [W] H W W - symmetric... Lydian of Melodic Minor??
     #III -> 0 1 3 4 6 8 10 	flat 4th, 5th
 
-    ('Harmonic Major',		[0, 2, 4, 5, 7, 8, 11]), # W W H [W] H b3 H  - asymmetric
+    ('Harmonic Major',			[0, 2, 4, 5, 7, 8, 11]), # W W H [W] H b3 H  - asymmetric
     #III -> 0 1 3 4 7 8 10	flat 4th
-    ('Neopolitan Major', 	[0, 1, 3, 5, 7, 9, 11]), # H W W [W] W W H - symmetric
+    ('Neopolitan Major', 		[0, 1, 3, 5, 7, 9, 11]), # H W W [W] W W H - symmetric
     #III -> 0 2 4 6 8 9 10
     
 	#top right DERIVED SCALES
-	('Major Blues',			[0, 2, 3, 4, 7, 9]),
-	('Major Pentatonic', 	[0, 2, 4, 7, 9]),
-	('Minor Blues',			[0, 3, 5, 6, 7, 10]), #Phy (start on bIII): 0 2 5 7 8 9, Lyd: 0 3 5 8 10 11
-	('Minor Pentatonic', 	[0, 3, 5, 7, 10]),
+	('Major Blues',				[0, 2, 3, 4, 7, 9]),
+	('Major Pentatonic', 		[0, 2, 4, 7, 9]),
+	('Minor Blues',				[0, 3, 5, 6, 7, 10]), #Phy (start on bIII): 0 2 5 7 8 9, Lyd: 0 3 5 8 10 11
+	('Minor Pentatonic', 		[0, 3, 5, 7, 10]),
 
 	#mid left
-	('Minor', 				[0, 2, 3, 5, 7, 8, 10]), #W H W [W] H b3 H
-	('Harmonic Minor', 		[0, 2, 3, 5, 7, 8, 11]), #W H W [W] H b3 H
-    ('Melodic Minor', 		[0, 2, 3, 5, 7, 9, 11]), #W H W [W] W W H
-    ('Neopolitan Minor', 	[0, 1, 3, 5, 7, 8, 11]), #H W W [W] H b3 H
+	('Minor', 					[0, 2, 3, 5, 7, 8, 10]), #W H W [W] H b3 H
+	('Harmonic Minor', 			[0, 2, 3, 5, 7, 8, 11]), #W H W [W] H b3 H
+    ('Melodic Minor', 			[0, 2, 3, 5, 7, 9, 11]), #W H W [W] W W H
+    ('Neopolitan Minor', 		[0, 1, 3, 5, 7, 8, 11]), #H W W [W] H b3 H
      
-	('Whole Tone', 			[0, 2, 4, 6, 8, 10]),
-	('Diminished', 			[0, 1, 3, 4, 6, 7, 9, 10]),
-    ('Whole-half', 			[0, 2, 3, 5, 6, 8, 9, 11]),
-    ('m7b5 Dim. Scale', 	[0, 2, 4, 5, 6, 8, 10, 11]),
+	('Whole Tone', 				[0, 2, 4, 6, 8, 10]),
+	('Diminished', 				[0, 1, 3, 4, 6, 7, 9, 10]),
+    ('Whole-half', 				[0, 2, 3, 5, 6, 8, 9, 11]),
+    ('m7b5 Dim. Scale', 		[0, 2, 4, 5, 6, 8, 10, 11]),
 
-	('9 Harmonic Major Blues',		[0, 2, 3, 5, 6, 7, 9, 10, 11]), #Based on Harmonic Major (Lydian, add b3, b7)
+	('9 Harmonic Major Blues',	[0, 2, 3, 5, 6, 7, 9, 10, 11]), #Based on Harmonic Major (Lydian, add b3, b7)
     #3 -> 0 2 3 4 6 7 8 9 10 
-    ('9 Melodic Major Blues',		[0, 2, 3, 4, 5, 7, 9, 10, 11]), # I ii bIII iii
+    ('9 Melodic Major Blues',	[0, 2, 3, 4, 5, 7, 9, 10, 11]), # I ii bIII iii
     
-	('Bebop Major', 		[0, 2, 4, 5, 7, 8, 9, 11]),
-    ('Bebop Dominant', 		[0, 2, 4, 5, 7, 9, 10, 11]),
-    ('Bebop Mel. Minor', 	[0, 2, 3, 5, 7, 8, 9, 11]),
+	('Bebop Major', 			[0, 2, 4, 5, 7, 8, 9, 11]),
+    ('Bebop Dominant', 			[0, 2, 4, 5, 7, 9, 10, 11]),
+    ('Bebop Mel. Minor', 		[0, 2, 3, 5, 7, 8, 9, 11]),
 
-	('Hungarian Minor', 	[0, 2, 3, 6, 7, 8, 11]), #b5
-    ('Super Locrian', 		[0, 1, 3, 4, 6, 8, 10]),
-	('Bhairav', 			[0, 1, 4, 5, 7, 8, 11]),
-	('Minor Gypsy', 		[0, 1, 4, 5, 7, 8, 10]),
+	#('Hungarian Minor', 	[0, 2, 3, 6, 7, 8, 11]), #b5
+    #('Super Locrian', 		[0, 1, 3, 4, 6, 8, 10]),
+	#('Bhairav', 			[0, 1, 4, 5, 7, 8, 11]),
+	#('Minor Gypsy', 		[0, 1, 4, 5, 7, 8, 10]),
 ])
 
 SCALE_NAMES = list(SCALE.keys())
@@ -88,9 +88,9 @@ numeral_intervals = [(0,), (1, 2), (3, 4), (5,), (6, 7), (8, 9), (10, 11)]
 #Mode 1 (0):	i | II 	| bIII | IV  | bv | v | vi 	| bVII | vii  |	0 2 3 5 6 7 9 10 11
 #Mode 2 (1):	I | bII	| bIII | III | iv |	v | bvi	| VI   | bvii |	0 1 3 4 5 7 8 9  10 
 
-SCALE_TRIADS = collections.OrderedDict([
-	('Major',				MODAL_TRIADS["Ionian"]),
-    ('Harmonic Major',		["I", "ii", "iii", "iv", "V", "bVI", "vii"])
+#SCALE_TRIADS = collections.OrderedDict([
+	#('Major',				MODAL_TRIADS["Ionian"]),
+    #('Harmonic Major',		["I", "ii", "iii", "iv", "V", "bVI", "vii"])
     #TODO... all of these numerals LOL
 	#('Diminished', 	[0, 1, 3, 4, 6, 7, 9, 10]),
 	#('Whole-half', 	[0, 2, 3, 5, 6, 8, 9, 11]),
@@ -112,4 +112,4 @@ SCALE_TRIADS = collections.OrderedDict([
 	#('Pelog', 				[0, 1, 3, 4, 7, 8]),
 	#('Spanish', 			[0, 1, 3, 4, 5, 6, 8, 10]),
 	#('IonEol', 				[0, 2, 3, 4, 5, 7, 8, 9, 10, 11])
-])
+#])
