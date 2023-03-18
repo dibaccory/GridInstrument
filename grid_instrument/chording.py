@@ -176,8 +176,8 @@ class Chord:
 
 	def _get_triad_numerals(self, triad, deg):
 		#Start with major, lower if not
-		has_flat = "b" if (deg in [1, 3, 6, 8, 10]) else ""
-		numeral  = has_flat + MAJOR_MODES[deg]
+		#has_flat = "b" if (deg in [1, 3, 6, 8, 10]) else ""
+		numeral  = MAJOR_MODES[deg]
 
 		if 	 self._is_major(triad):
 			return numeral
@@ -200,20 +200,36 @@ class Chord:
 	   	]
 	
 	def _get_7th(self, degree, chord, ext=[]):
-		scale_length = len(self.scale["span"])
-		_7th_degree = (degree+6)%scale_length
-		nat_7th_note 	= self.scale["span"][_7th_degree] + (12 if degree > 0 else 0)
-		nat_7th_ivl 	= abs( self.scale["span"][degree] - nat_7th_note )
-		nat_7th 		= "7" if nat_7th_ivl in [2,10] else "maj7"
-		alt_7th 		= "7" if nat_7th == "maj7" else "maj7"
-		alt_7th_note 	= nat_7th_note + (1 if nat_7th == "7" else -1) 
-		_7th_notation = ""
 
+		_7th_deg = (degree-1)
+		
+		#if there are two 7 intervals in scale. If not, return first _7th_deg
+		_2nd_7th_deg = (degree-2) if abs(self.scale["span"][degree] - self.scale["span"][degree-2]) in [2,10] else False
+		
+		#is _7th deg m7?
+		is_m7 = abs( self.scale["span"][degree] - self.scale["span"][_7th_deg]) in [2,10]
+		
+		nat_7th = "7" if is_m7 else "maj7"
+		
+
+		#if is minor, prioritize dim7, else minor 7
+		if self.scale["span"][degree] in MINOR_MODES:
+			#is there a dim7? if not, return _2nd_7th_deg
+			can_dim		= self._is_dim(chord) and abs( self.scale["span"][degree] - self.scale["span"[degree-3]])
+			o7_deg		= degree-3 if can_dim in [3,9] else (_2nd_7th_deg if _2nd_7th_deg else _7th_deg)
+			nat_7th_note 	= self.scale["span"][o7_deg] 
+		else:
+			nat_7th_note	= self.scale["span"][_7th_deg] 
+		
+		alt_7th 		= "7" if nat_7th == "maj7" else "maj7"
+		alt_7th_note 	= nat_7th_note + (1 if nat_7th == "7" else -1)
+		_7th_notation = ""
+		octave_7th = 12 if degree != 0 else 0
 		#Choose alternate 7th over natural 7th
 		if alt_7th in ext:
 			ext.remove(alt_7th)
 			_7th_notation = alt_7th
-			chord.append(alt_7th_note)
+			chord.append(alt_7th_note + octave_7th)
 
 		elif self.jazzy or nat_7th in ext:
 			try:
@@ -221,7 +237,7 @@ class Chord:
 			except ValueError:
 				pass
 			_7th_notation = nat_7th
-			chord.append(nat_7th_note)
+			chord.append(nat_7th_note + octave_7th)
 
 		return _7th_notation
 		
@@ -248,7 +264,7 @@ class Chord:
 
 		#Find the notes to the left and right of pressed_note_interval (left_note, right_note)
 		left_note  = next(note for note in reversed(list(enumerate(self.scale["span"]))) if note[1] < pressed_note)
-		right_note = next(note for note in enumerate(self.scale["span"]) if note[1] > pressed_note)
+		right_note = next(note for note in list(enumerate(self.scale["span"])) if note[1] > pressed_note)
 
 		#if current scale isn't diatonic, we need to check which modal triad is missing
 		#if abs(left_note[1] - right_note[1])%3 == 0 and (left_note[1], right_note[0]) not in [(1,4), (6,9), (8,11)]:

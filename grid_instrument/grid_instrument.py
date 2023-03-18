@@ -19,11 +19,51 @@ except ImportError:
 
 SCALE_NAMES = list(SCALE.keys())
 
+CHORD_LAYOUT = {
+	"default": (
+		#initial conditions based on diatonic major
+		#will change on _active_scale update
+		#(function name, info)
+		#scale = takes whole column, starting note degree (if empty, cont from prev row end), starting note inv
+		#chord = takes whole column, holds chord notations (need to create get_chord_by_notation inchord class)
+		#user = takes specified cells. When pressed, saves all "scale", "chord", or "ext" buttons
+		("scale", 0, 	0),
+		("scale", 4, 	7),
+		("scale", 9, 	4+12),
+		("scale", 6, 	11),
+		("scale", 11, 	7+12),
+		("chord", ("I", "ii", "iii", "IV", "V", "vi", "vii")),
+		("user", (
+			(7,2), (7,3), (7,4), (7,5), (7,6), (7,7), (7,8), 
+			(8,2), (8,3), (8,4), (8,5), (8,6), (8,7), (8,8) 
+		)),
+		("lock", (8,1)),
+		("sustain", (7,1))
+	),
+	"chord_map": (
+	
+		#5, 6, 7, [1] | [5], 4 3 2
+		("chord", ("V", "vi", "vii", "I", "V", "IV", "iii", "ii")), #COL 4
+		#mode 5 (Aeolian): 5, 6, 7, [1] | [5], 4 3 2
+		("chord", ("v", "bVI", "bVII", "I", "v", "IV", "bIII", "ii")), #COL 5
+
+	),
+}
+
+SCALE_POS = [ 
+	(2,2), (1,3), (2,3), (3,3), 
+	(1,2), (1,1), (2,1), (3,1),
+	(3,2), (7,2), (8,3), (7,3), 
+	(6,3), (8,2), (8,1), (7,1), 
+	(6,1), (6,2)]
+
 SETTINGS = {
-	"key": sorted([
+	"key": sorted((
 				(1,7),  (2,7),  	(4,7), (5,7), (6,7), 
 			(1,6), (2,6), (3,6), (4,6), (5,6), (6,6), (7,6)
-		]),
+	)),
+	"layout": ((5,8),(6,8),(7,8),(8,8)), 
+
 	"scale": {
 		"base_major": [("Major", 		(2,2))],
 		"major": [
@@ -39,7 +79,7 @@ SETTINGS = {
 			("Major Blues", 			(3,2)),
 		],
 
-		"base_minor": [("Minor", 		(2,2))],
+		"base_minor": [("Minor", 		(7,2))],
 		"minor": [
 			("Melodic Minor", 			(8,3)),
 			("Harmonic Minor",	 		(7,3)),
@@ -47,19 +87,18 @@ SETTINGS = {
 			("Minor Pentatonic", 		(8,2)),
 		],
 		"jazz_minor": [
-			("9 Melodic Major Blues",	(8,1)),
-			("Bebop Major",	 			(7,1)),
-			("Bebop Dominant", 			(6,1)),
-			("Major Blues", 			(6,2)),
+			("9 Harmonic Major Blues",	(8,1)),
+			("m7b5 Dim. Scale",			(7,1)),
+			("Diminished", 				(6,1)),
+			("Minor Blues", 			(6,2)),
 		]
 	},
 
-	"mode": [
-		("reset", 	(4,3))
-		("up", 		(5,3))
-		("down", 	(4,2))
-		("fif", 	(5,2))
-	]
+	"mode": ( (4,3), (5,3), (4,2), (5,2) ),
+		#("reset", 	(4,3))
+		#("up", 		(5,3))
+		#("down", 	(4,2))
+		#("fif", 	(5,2))
 	#"layout": [(8,6), (8,7), (8,8)] update to left/right arrows?
 }
 
@@ -72,22 +111,33 @@ NOTE_COLORS = {
             "out_scale": 	[0X00, 0X00, 0X00]
         },
 	"settings": {
-        "scale_on": 			[0X00, 0X28, 0X00],
-		"scale_off": 			[0X00, 0X0A, 0X00],
-        "scale_on": 			[0X00, 0X02, 0X3F],
-		"scale_off": 			[0x01, 0X01, 0X05],
-		
+        "key_selected": 	[0X3F, 0X00, 0X00],
+		"key": 				[0X05, 0X00, 0X00],
+        "layout_selected": 	[0X00, 0X00, 0X3F],
+		"layout":	 		[0x00, 0X00, 0X05],
+        "scale_selected": 	[0X00, 0X3F, 0X00],
+		"scale": {
+			"base_major": 	[0X35, 0X20, 0X20],
+			"major": 		[0X3F, 0X10, 0X10],
+			"jazz_major": 	[0X3F, 0X10, 0X3F],
+			"base_minor": 	[0X20, 0X20, 0X35],
+			"minor": 		[0X10, 0X10, 0X3F],
+			"jazz_minor": 	[0X10, 0X3F, 0X30],
+		},
+		"mode":				[0X00, 0X00, 0X3F],
+		"mode_selected":	[0X3F, 0X30, 0X3F],
+		"mode_inc":			[0X20, 0X20, 0X20]
 	}
 }
 
-NOTE_COLORS_ol = { 
+NOTE_COLORS_old = { 
 	"Mk1": { 
-		"note.on": [0, 63],    
-		"note.root": [3, 0],      
+		"note.on": [0, 3],    
+		"note.root": [3, 0],     
 		"note.in_scale": [1, 1],
 		"note.out_scale": [0, 0],
 		"settingsKeyOff": [0, 4],
-		"settingsKeyOn":  [0, 20],
+		"settingsKeyOn":  [0, 2],
 		"settings.key_off": [1, 1],
 		"settings.key_on":  [3, 3],
 		"settings.scale_off": [0, 1],
@@ -130,6 +180,8 @@ class GridInstrument:
 	#		self.y = y
 	#		self.color = color
 	#		self.pressed = pressed
+
+	#NOTE_MODE_OFFSET
 	GRID_LAYOUT = [
 		["Scale",		7],
 		["Diatonic 4th", 3],
@@ -140,10 +192,6 @@ class GridInstrument:
 	SCALE_LAYOUT = ["Scale", 7]
 
 	NOTE_NAMES = ["C", "C#", "D", "Eb", "E", "F", "F#", "G", "G#", "A", "A#", "B"]
-
-	
-
-
 
 
 	# Settings
@@ -167,7 +215,7 @@ class GridInstrument:
 	}
 	_pressed_notes = []
 	_pressed_buttons = []
-	_pressed_chords = [[]] * 28 #TODO: initalize this better
+	_pressed_chords = [[]] * 90 #TODO: initalize this better
 	_grid_octave = 3
 	_scale_key = 0
 	
@@ -220,7 +268,7 @@ class GridInstrument:
 				else:
 					time.sleep(2)
 		if self.intro_message is not None and len(self.intro_message) > 0:
-			self._scroll_text(self.intro_message, 'settingsKeyOff')
+			self._scroll_text(self.intro_message, NOTE_COLORS["settings"]["scale_selected"])
 			pass
 
 	#TODO: Make prettier. Maybe make 
@@ -253,7 +301,7 @@ class GridInstrument:
 				pressed = (but[2] > 0) or (but[2] == True)
 
 				if self._launchpad_mode == "notes":
-					self._note_mode_handler(x,y,pressed, but[2])
+					self._note_mode_handler(x,y, pressed, but[2])
 
 				#Settings
 				elif self._launchpad_mode == "settings":
@@ -267,11 +315,13 @@ class GridInstrument:
 						self.GRID_LAYOUT[self.GRID_LAYOUT.index(self.SCALE_LAYOUT)][1] = len(self._active_scale["span"])
 						self._color_buttons()
 						
-					elif (x,y) in SETTINGS["scale"]:
+					elif (x,y) in SCALE_POS:
+						scales = [ scale for key in SETTINGS["scale"].keys() for scale in SETTINGS["scale"][key] ]
+						name = [t[0] for t in scales if (x,y) == t[1]]
 						if pressed:
 							self._highlight_keys_in_scale()
 						else:
-							self._active_scale_button_pressed(x, y)
+							self._active_scale_button_pressed(*name)
 						self._highlight_keys_in_scale()
 
 				self._global_func_handler(x,y,pressed)
@@ -310,16 +360,16 @@ class GridInstrument:
 					self._button_released(self.randomButton[0], self.randomButton[1])
 					self.randomButton = None
 		elif (x,y) == (3,9) and pressed:
-			#self._layout_index = (self._layout_index - 1)%len(self.GRID_LAYOUT)
-			self.GRID_LAYOUT = self.GRID_LAYOUT[-1:] + self.GRID_LAYOUT[:-1]
-			self._layout_name = self.GRID_LAYOUT[0][0]
-			self._layout_offset = self.GRID_LAYOUT[0][1]
+			i = self._layout_index
+			self._layout_index = (i - 1)%len(self.GRID_LAYOUT) if i > 0 else len(self.GRID_LAYOUT)-1
+			#self.GRID_LAYOUT = self.GRID_LAYOUT[-1:] + self.GRID_LAYOUT[:-1]
+			self._layout_name, self._layout_offset = self.GRID_LAYOUT[i]
 			self._color_buttons()
 		elif (x,y) == (4,9) and pressed:
-			#self._layout_index = (self._layout_index + 1)%len(self.GRID_LAYOUT)
-			self.GRID_LAYOUT = self.GRID_LAYOUT[1:] + self.GRID_LAYOUT[:1]
-			self._layout_name = self.GRID_LAYOUT[0][0]
-			self._layout_offset = self.GRID_LAYOUT[0][1]
+			i = self._layout_index
+			self._layout_index = (i + 1)%len(self.GRID_LAYOUT) if i < len(self.GRID_LAYOUT) else 0
+			#self.GRID_LAYOUT = self.GRID_LAYOUT[-1:] + self.GRID_LAYOUT[:-1]
+			self._layout_name, self._layout_offset = self.GRID_LAYOUT[i]
 			self._color_buttons()
 		
 		#if (x,y) == (6,8) and self._layout != "Diatonic 4th":
@@ -356,15 +406,15 @@ class GridInstrument:
 
 	def _color_note_button(self, x, y, note_interval=1, pressed=False):
 		if pressed:
-			key = "note.on" + (".chord_root" if note_interval%12 == 0 else "")# + (".alt" if indirect else "")
+			key =  "tonic" if note_interval%12 == 0 else "on"
 		elif note_interval not in self._active_scale["span"]:
-			key = "note.out_scale"
+			key = "out_scale"
 		elif note_interval == 0:
-			key = "note.root"
+			key = "root"
 		else:
-			key = "note.in_scale"
+			key = "in_scale"
 
-		self._color_button(x, y, key)
+		self._color_button(x, y, NOTE_COLORS["note"][key])
 
 
 	def _color_button(self, x,y, color):
@@ -385,12 +435,15 @@ class GridInstrument:
 	#		self.lp.LedCtrlXY(lpX, lpY, NOTE_COLORS[colorSet][buttonType][0], NOTE_COLORS[colorSet][buttonType][1], NOTE_COLORS[colorSet][buttonType][2])
 
 	def _scroll_text(self, text, colorKey):
+		self.lp.LedCtrlString(text, *colorKey, self.lp.SCROLL_LEFT, 20)
+
+
 		if self._launchpad_model == "Mk1":
 			colorSet = "Mk1"
-			self.lp.LedCtrlString(text, NOTE_COLORS[colorSet][colorKey][0], NOTE_COLORS[colorSet][colorKey][1], self.lp.SCROLL_LEFT, 20)
+			#self.lp.LedCtrlString(text, NOTE_COLORS[colorSet][colorKey][0], NOTE_COLORS[colorSet][colorKey][1], self.lp.SCROLL_LEFT, 20)
 		else:
 			colorSet = "Mk2"
-			self.lp.LedCtrlString(text, NOTE_COLORS[colorSet][colorKey][0], NOTE_COLORS[colorSet][colorKey][1], NOTE_COLORS[colorSet][colorKey][2], self.lp.SCROLL_LEFT, 20)
+			#self.lp.LedCtrlString(text, NOTE_COLORS[colorSet][colorKey][0], NOTE_COLORS[colorSet][colorKey][1], NOTE_COLORS[colorSet][colorKey][2], self.lp.SCROLL_LEFT, 20)
 
 	#Colors whole layout on mode change. Like an initalization for each mode
 	def _color_buttons(self):
@@ -402,23 +455,22 @@ class GridInstrument:
 		#Settings > Scales			
 		elif self._launchpad_mode == "settings":
 
-			self._color_button(5, 8, "settings.layout_" + ("on" if self._layout_name == "Scale" else "off"))
-			self._color_button(6, 8, "settings.layout_" + ("on" if self._layout_name == "Diatonic 4th" else "off"))
-			self._color_button(7, 8, "settings.layout_" + ("on" if self._layout_name == "Diatonic 5th" else "off"))           
-			self._color_button(8, 8, "settings.layout_" + ("on" if self._layout_name == "Chromatic" else "off"))                
-
+			for i, scale_xy in enumerate(SETTINGS["layout"]):
+				self._color_button(*scale_xy, NOTE_COLORS["settings"]["layout" + ("_selected" if self._layout_name == self.GRID_LAYOUT[i][0] else "")] )
+		
 			#for i in GRID_KEY.len
 			#	colorbutton(GRID_KEY[i], "on" if _gridkey = i else "pff")
-			key_i = 0
-			for x,y in SETTINGS["key"]:
-				self._color_button(x,y, "settings.key_" + ("on" if self._scale_key == key_i else "off") )
-				key_i +=1
+			for i, scale_xy in enumerate(SETTINGS["key"]):
+				self._color_button(*scale_xy, NOTE_COLORS["settings"]["key" + ("_selected" if self._scale_key == i else "")] )
 
-			scale_i = 0
-			for scale_type, ar in SETTINGS["scale"].items():
 
-				self._color_button(x,y, NOTE_COLORS[self._launchpad_model][scale_type][scale_name])#"settings.scale_" + ("on" if self._active_scale["name"] == SCALE_NAMES[scale_i] else "off") )
-				scale_i +=1
+			for scale_type, scale_list in SETTINGS["scale"].items():
+				for name, scale_xy in scale_list:
+					if self._active_scale["name"] == name:
+						self._color_button(*scale_xy, NOTE_COLORS["settings"]["scale_selected"])
+					else:
+						self._color_button(*scale_xy, NOTE_COLORS["settings"]["scale"][scale_type])
+			
 
 			#scale_i = 0
 			#for scale_type, scale_coords in KEY_OPTIONS["settings"]["scale"].items():
@@ -427,13 +479,10 @@ class GridInstrument:
 			#	self._color_button(*scale_coords, scale_key_on if self._active_scale["name"] == SCALE_NAMES[scale_i] else scale_key_off)
 			#	scale_i += 1
 			
-		self._color_button(9, 6, "note.on") # octave up
-		self._color_button(9, 5, "note.on") # octave down
-		self._color_button(9, 8, "note.on") # settings
+		self._color_button(9, 6, NOTE_COLORS["note"]["on"]) # octave up
+		self._color_button(9, 5, NOTE_COLORS["note"]["on"]) # octave down
+		self._color_button(9, 8, NOTE_COLORS["note"]["on"]) # settings
 		
-		if self.kid_mode is not True:
-			self._color_button(1, 9, "note.on") # sample down
-			self._color_button(2, 9, "note.on") # sample up
 
 	def _is_key_in_scale(self, key):
 		return key in self._active_scale["span"]
@@ -539,8 +588,7 @@ class GridInstrument:
 				self._play_note(ntx,nty, note, velocity, btn_inv)
 
 			if chord_notes not in self._pressed_chords:
-				self._pressed_chords[pressed_grid_index] = chord_notes
-
+ 				self._pressed_chords[pressed_grid_index] = chord_notes
 		else:
 			self._play_note(x,y, pressed_MIDI_note, velocity, btn_inv)
 
@@ -635,9 +683,9 @@ class GridInstrument:
 		self._pressed_chords = [[]] * self._XY_to_grid_index(8,8)
 
 
-	def _update_scale(self, index=None, mode=0):
-		if index is not None:
-			self._active_scale["name"] = SCALE_NAMES[index]
+	def _update_scale(self, name=None, mode=0):
+		if name is not None:
+			self._active_scale["name"] = name
 			self._active_scale["span"] = SCALE[self._active_scale["name"]]
 			#gross lol TODO: would ordered dict fix this?
 			i = self.GRID_LAYOUT.index(self.SCALE_LAYOUT)
@@ -653,13 +701,13 @@ class GridInstrument:
 			print(rotated_scale)
 
 		self._chord.update_scale(self._active_scale)
-		print(self._active_scale)
+		#print(self._active_scale)
 
-	def _active_scale_button_pressed(self, x, y):
-		scale_index = (x - 1) + ((4 - y) * 8)
+	def _active_scale_button_pressed(self, name):
+		#scale_index = (x - 1) + ((4 - y) * 8)
 		#self._active_scale["name"] = SCALE_NAMES[index]
-		self._update_scale(scale_index)
-		self._pressed_chords = [[]] * self._XY_to_grid_index(8,8)
+		self._update_scale(name)
+		self._pressed_chords = [[]] * 2 * self._XY_to_grid_index(8,8)
 		print(self._active_scale)
 		if self._chord_mode:
 			pass
@@ -675,4 +723,4 @@ class GridInstrument:
 			if self._is_key_in_scale(key):
 				x = SETTINGS["key"][key][0]
 				y = SETTINGS["key"][key][1]
-				self._color_button(x, y, "note.in_scale")
+				self._color_button(x, y, NOTE_COLORS["note"]["in_scale"])
