@@ -1,9 +1,11 @@
 import time
 import random
 import math
-import collections
+from itertools import product
 import numpy as np
 import sys
+from .colors import *
+from .layout_maker import *
 from .scales import *
 from .chording import Chord
 
@@ -16,38 +18,14 @@ except ImportError:
 	except ImportError:
 		sys.exit("error loading launchpad.py")
 
+INIT_SCALE = Chord().scale
 
 SCALE_NAMES = list(SCALE.keys())
 
-CHORD_LAYOUT = {
-	"default": (
-		#initial conditions based on diatonic major
-		#will change on _active_scale update
-		#(function name, info)
-		#scale = takes whole column, starting note degree (if empty, cont from prev row end), starting note inv
-		#chord = takes whole column, holds chord notations (need to create get_chord_by_notation inchord class)
-		#user = takes specified cells. When pressed, saves all "scale", "chord", or "ext" buttons
-		("scale", 0, 	0),
-		("scale", 4, 	7),
-		("scale", 9, 	4+12),
-		("scale", 6, 	11),
-		("scale", 11, 	7+12),
-		("chord", ("I", "ii", "iii", "IV", "V", "vi", "vii")),
-		("user", (
-			(7,2), (7,3), (7,4), (7,5), (7,6), (7,7), (7,8), 
-			(8,2), (8,3), (8,4), (8,5), (8,6), (8,7), (8,8) 
-		)),
-		("lock", (8,1)),
-		("sustain", (7,1))
-	),
-	"chord_map": (
-	
-		#5, 6, 7, [1] | [5], 4 3 2
-		("chord", ("V", "vi", "vii", "I", "V", "IV", "iii", "ii")), #COL 4
-		#mode 5 (Aeolian): 5, 6, 7, [1] | [5], 4 3 2
-		("chord", ("v", "bVI", "bVII", "I", "v", "IV", "bIII", "ii")), #COL 5
-
-	),
+PAD_MODES = {
+	"chord": {
+		"default": PadLayout(CHORD_LAYOUT["default"], "chord", INIT_SCALE, "column")
+	}
 }
 
 SCALE_POS = [ 
@@ -102,33 +80,7 @@ SETTINGS = {
 	#"layout": [(8,6), (8,7), (8,8)] update to left/right arrows?
 }
 
-NOTE_COLORS = {
-	"note": {
-            "on": 			[0X3F, 0X3F, 0X00],
-	        "root": 		[0X20, 0X00, 0X3F],
-            "tonic": 		[0X3F, 0X25, 0X00],
-            "in_scale": 	[0X03, 0X01, 0X10],
-            "out_scale": 	[0X00, 0X00, 0X00]
-        },
-	"settings": {
-        "key_selected": 	[0X3F, 0X00, 0X00],
-		"key": 				[0X05, 0X00, 0X00],
-        "layout_selected": 	[0X00, 0X00, 0X3F],
-		"layout":	 		[0x00, 0X00, 0X05],
-        "scale_selected": 	[0X00, 0X3F, 0X00],
-		"scale": {
-			"base_major": 	[0X35, 0X20, 0X20],
-			"major": 		[0X3F, 0X10, 0X10],
-			"jazz_major": 	[0X3F, 0X10, 0X3F],
-			"base_minor": 	[0X20, 0X20, 0X35],
-			"minor": 		[0X10, 0X10, 0X3F],
-			"jazz_minor": 	[0X10, 0X3F, 0X30],
-		},
-		"mode":				[0X00, 0X00, 0X3F],
-		"mode_selected":	[0X3F, 0X30, 0X3F],
-		"mode_inc":			[0X20, 0X20, 0X20]
-	}
-}
+
 
 NOTE_COLORS_old = { 
 	"Mk1": { 
@@ -207,12 +159,13 @@ class GridInstrument:
 	# State Variables
 	_launchpad_model = None
 	lp = None
-	
-	_active_scale = {
-		"name": "Major",
-		"mode": 0, #0 is "ionian", but since we aren't dealing with only 7-note scales (diatonic, namely), we index instead
-		"span": SCALE["Major"]
-	}
+
+	_active_scale = INIT_SCALE
+	_active_mode = PAD_MODES["chord"]
+	_active_mode_layout = PAD_MODES["chord"]["default"]
+
+	_active_notes = []
+	_pressed_pads = []
 	_pressed_notes = []
 	_pressed_buttons = []
 	_pressed_chords = [[]] * 90 #TODO: initalize this better
@@ -222,6 +175,8 @@ class GridInstrument:
 	_layout_index = 1
 	_layout_name = GRID_LAYOUT[0][0]
 	_layout_offset = GRID_LAYOUT[0][1]
+
+
 	
 	_launchpad_mode = "notes" #modes: notes, settings, chord
 	_LED_mode = "Pressed" #modes: Pressed, fireworks, pattern by interval?
@@ -295,13 +250,15 @@ class GridInstrument:
 				self.randomButtonCounter = self.randomButtonCounter + 1
 
 			if but != []:
-				#TODO: Convert x,y back to original coord state... it's inverted
 				x = but[0] + 1
 				y = (8 - but[1]) + 1 #why invert this??
 				pressed = (but[2] > 0) or (but[2] == True)
 
 				if self._launchpad_mode == "notes":
 					self._note_mode_handler(x,y, pressed, but[2])
+
+				elif self._launchpad_mode == "chord":
+					self._chord_mode_handler(x,y, pressed, but[2])
 
 				#Settings
 				elif self._launchpad_mode == "settings":
@@ -381,12 +338,32 @@ class GridInstrument:
 		#elif (x,y) == (8,8) and self._layout != "Chromatic":
 		#	self._layout = "Chromatic"
 		#	self._color_buttons()
-					
+
+	def _chord_mode_handler(self, x, y, pressed, lp_vel):
+		self._chord_mode = False
+		#TODO: create a USER_BUTTON_PRESSED flag to denote the xy of the user button being pressed. If not none then true
+		#if self._active_mode_layout.get_pad(x,y).type in ["user", "chord", "scale"]:
+		if (x < 9) and (y < 9):
+			if pressed:
+				velocity = self.default_velocity
+				if self._launchpad_model == "Pro":
+					velocity = min(lp_vel * self.launchpad_pro_velocity_multiplier, self.max_velocity)
+				#TODO: integrate a use for self._active_mode_layout.get_pad(x,y).data
+				#for user, chord, and scale, data contains scale degrees
+				self._pad_pressed(x, y, velocity)
+			else:
+				self._pad_released(x, y)
+
 	def _global_func_handler(self, x, y, pressed):
 		#Change sample mode??
-		if pressed and (x,y) in [(1,9), (2,9)] and (self.kid_mode is not True):
-			#self.func_button_callback(x, y, pressed)
-			print("SAMPLE CHANGE BUTTON - TODO")
+		if pressed and (x,y) in [(1,9), (2,9)]:
+			if self._launchpad_mode == "notes":
+				self._launchpad_mode = "chord"
+			elif self._launchpad_mode == "chord":
+				self._launchpad_mode = "notes"
+			self.lp.Reset()
+			self._color_buttons()
+
 		elif (x,y) == (9,8):
 			if pressed:
 				self._launchpad_mode = "settings"
@@ -416,34 +393,19 @@ class GridInstrument:
 
 		self._color_button(x, y, NOTE_COLORS["note"][key])
 
+	def _color_mutual_note_pads(self, pad):
+		mutual_pads = [*set(p for note in pad.data for p in self._active_mode_layout.get_pads_by_note(note))]
+		print([p.xy for p in mutual_pads])
+		[self._color_button(*p.xy, p.get_color(pad.pressed)) for p in mutual_pads]
 
 	def _color_button(self, x,y, color):
 		lpX = x - 1
 		lpY = -1 * (y - 9)
+		#TODO: Convert RGB to RG if Mk1
 		self.lp.LedCtrlXY(lpX, lpY, *color)
-
-
-	#def _color_button(self, x, y, buttonType):
-	#	lpX = x - 1
-	#	lpY = -1 * (y - 9)
-#
-	#	if self._launchpad_model == "Mk1":
-	#		colorSet = "Mk1"
-	#		self.lp.LedCtrlXY(lpX, lpY, NOTE_COLORS[colorSet][buttonType][0], NOTE_COLORS[colorSet][buttonType][1])
-	#	else:
-	#		colorSet = "Mk2"
-	#		self.lp.LedCtrlXY(lpX, lpY, NOTE_COLORS[colorSet][buttonType][0], NOTE_COLORS[colorSet][buttonType][1], NOTE_COLORS[colorSet][buttonType][2])
 
 	def _scroll_text(self, text, colorKey):
 		self.lp.LedCtrlString(text, *colorKey, self.lp.SCROLL_LEFT, 20)
-
-
-		if self._launchpad_model == "Mk1":
-			colorSet = "Mk1"
-			#self.lp.LedCtrlString(text, NOTE_COLORS[colorSet][colorKey][0], NOTE_COLORS[colorSet][colorKey][1], self.lp.SCROLL_LEFT, 20)
-		else:
-			colorSet = "Mk2"
-			#self.lp.LedCtrlString(text, NOTE_COLORS[colorSet][colorKey][0], NOTE_COLORS[colorSet][colorKey][1], NOTE_COLORS[colorSet][colorKey][2], self.lp.SCROLL_LEFT, 20)
 
 	#Colors whole layout on mode change. Like an initalization for each mode
 	def _color_buttons(self):
@@ -452,6 +414,11 @@ class GridInstrument:
 				for y in range(1, 9):
 					self._color_note_button(x, y, self._get_note_interval(x, y), (self._get_midi_note(x, y) in self._pressed_notes))
 
+		elif self._launchpad_mode == "chord":
+			for xy in product(range(1,9),range(1,9)):
+				pad =  self._active_mode_layout.get_pad(*xy)
+				c = pad.color
+				self._color_button(*xy, c)
 		#Settings > Scales			
 		elif self._launchpad_mode == "settings":
 
@@ -470,14 +437,6 @@ class GridInstrument:
 						self._color_button(*scale_xy, NOTE_COLORS["settings"]["scale_selected"])
 					else:
 						self._color_button(*scale_xy, NOTE_COLORS["settings"]["scale"][scale_type])
-			
-
-			#scale_i = 0
-			#for scale_type, scale_coords in KEY_OPTIONS["settings"]["scale"].items():
-			#	scale_key_on = f"settings.scale.{scale_type}.on"
-			#	scale_key_off = f"settings.scale.{scale_type}.off"
-			#	self._color_button(*scale_coords, scale_key_on if self._active_scale["name"] == SCALE_NAMES[scale_i] else scale_key_off)
-			#	scale_i += 1
 			
 		self._color_button(9, 6, NOTE_COLORS["note"]["on"]) # octave up
 		self._color_button(9, 5, NOTE_COLORS["note"]["on"]) # octave down
@@ -508,10 +467,7 @@ class GridInstrument:
 		if x is not None and y is not None:
 			return self._XY_to_grid_index(x,y) % self._get_scale_length()
 		elif inv is not None:
-			#print(inv)
-			#There exists a d in span Scale[self._active_scale] s.t. inv%d = 0 , thus inv % 12 will always be indexed
 			deg = (self._active_scale["span"].index(inv % 12) + (self._get_scale_length()) * (inv // 12)) if self._layout_name != "Chromatic" else inv
-
 			#print("Scale degree of inv ", inv, ":\t", deg)
 			return deg
 
@@ -522,9 +478,6 @@ class GridInstrument:
 	def _get_midi_note(self, x, y):
 		note_octave = self._XY_to_grid_index(x, y) // self._get_scale_length()
 		return self._minimum_note_on_board() + self._get_note_interval(x, y) + 12 * note_octave
-
-	def get_note_info(self, x, y):
-		pass
 
 	def diff(first, second):
 		second = set(second)
@@ -544,6 +497,9 @@ class GridInstrument:
 	def _button_to_XY(self, btn):
 		return (btn%8 + 1), (btn//8 + 1)
 
+	def _XY_to_button(self, x, y):
+		return 8*(y-1) + (x-1)
+
 	def get_currently_playing_midi_notes(self):
 		notes = []
 		for button_number in self._pressed_buttons:
@@ -552,6 +508,85 @@ class GridInstrument:
 			if midi_note not in notes:
 				notes.append(midi_note)
 		return notes
+	
+	def _pad_pressed(self, x, y, velocity):
+
+		button_number = self._XY_to_button(x, y)
+		self._pressed_buttons.append(button_number)
+
+		pad = self._active_mode_layout.get_pad(x, y)
+		pad.pressed = True
+		if pad.type == "note" and not self._active_mode_layout.get_pads_by_type("lock")[0].data:
+			[usr_pad.data.append(pad.data[0]) if pad.data[0] not in usr_pad.data else usr_pad.data.remove(pad.data[0]) for usr_pad in self._active_mode_layout.get_pressed_pads("user")]
+		
+		if pad.type in ["note", "chord", "user"]:
+
+			#if [], then it won't play anything
+			
+			[(self._note_on(note, velocity)) for note in pad.data]
+			self._color_mutual_note_pads(pad)
+		elif pad.type == "sustain":
+			pad.toggle()
+		elif pad.type == "lock":
+			pass
+
+		self._color_button(*pad.xy, pad.get_color())
+
+	def _note_on(self, note, velocity):
+
+		if note is None:
+			return
+		
+		midi_note = self._minimum_note_on_board() + note
+
+		if note not in self._active_notes:
+			self.note_callback("note_on", midi_note, velocity)
+			self._active_notes.append(note)
+
+		else:
+			#play note again
+			self.note_callback("note_off", midi_note, velocity)
+			self.note_callback("note_on", midi_note, velocity)
+
+	def _pad_released(self, x, y):
+
+		button_number = self._XY_to_button(x, y)
+		if button_number not in self._pressed_buttons:
+			return
+		
+		self._pressed_buttons.remove(button_number)
+
+		pad = self._active_mode_layout.get_pad(x, y)
+		pad.pressed = False
+
+		if pad.type in ["note", "chord", "user"]:
+			#If sustain is active, don't keep all MIDI notes on
+			if self._active_mode_layout.get_pads_by_type("sustain")[0].data:
+				return
+			#if [], then it won't play anything
+			all_pressed_pad_notes = self._active_mode_layout.get_notes_for_pressed_pads()
+			[(self._note_off(note)) for note in pad.data if note not in all_pressed_pad_notes]
+			self._color_mutual_note_pads(pad)
+		elif pad.type == "sustain":
+			pad.toggle()
+			#note_off for all notes that are not pressed but the corresponding MIDI note is playing
+			notes = self._active_notes.copy()
+			all_pressed_pad_notes = self._active_mode_layout.get_notes_for_pressed_pads()
+			[self._note_off(note) for note in notes if note not in all_pressed_pad_notes]
+
+		elif pad.type == "lock":
+			pad.toggle()
+
+		self._color_button(*pad.xy, pad.get_color())
+
+	def _note_off(self, note):
+		midi_note = self._minimum_note_on_board() + note
+		self.note_callback('note_off', midi_note, 0)
+
+		if note in self._active_notes:
+			self._active_notes.remove(note)
+		#print("NOTE OFF:\t", midi_note)
+
 
 	# This takes 1-based coordinates with 1,1 being the lower left button
 	def _button_pressed(self, x, y, velocity):
@@ -662,7 +697,6 @@ class GridInstrument:
 
 		#print("NOTE ON:\t", midi_note)
 
-
 	def _stop_note(self, x,y, midi_note):
 		self.note_callback('note_off', midi_note, 0)
 		buttons = self._get_buttons_for_midi_note(x,y)
@@ -671,7 +705,6 @@ class GridInstrument:
 			self._color_note_button(btn_x, btn_y, self._get_note_interval(btn_x, btn_y))
 
 		#print("NOTE OFF:\t", midi_note)
-
 
 	# Todo, we should actually 
 	def _all_buttons_released(self):

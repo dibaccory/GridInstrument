@@ -2,6 +2,11 @@ import math
 from .scales import *
 #from grid_instrument import *
 
+DEFAULT_SCALE = {
+	"name": "Major",
+	"mode": 0, #0 is "ionian", but since we aren't dealing with only 7-note scales (diatonic, namely), we index instead
+	"span": SCALE["Major"]
+}
 #How to instantiate chords in a mode?
 #If we instantiate by the current musical mode, we should find chords by scale note?
 #chord = Chord(MODES["Major"])
@@ -97,6 +102,35 @@ def _add13(ch):
 def _b13(ch):
 	return ch.append(ch[0]+21)
 
+def is_major(chord):
+	#intervals are M3 and m3
+	return (chord[1]-chord[0] == 4 and chord[2]-chord[1] == 3)
+
+def is_minor(chord):
+	#intervals are m3 and M3
+	return (chord[1]-chord[0] == 3 and chord[2]-chord[1] == 4)
+
+def is_dim(chord):
+	#intervals in triad are both m3
+	return (chord[1]-chord[0] == chord[2]-chord[1] == 3)
+
+def is_aug(chord):
+	#intervals in triad are both m3
+	return (chord[1]-chord[0] == chord[2]-chord[1] == 4)
+
+def get_triad_type(triad):
+	triad_type = ""
+	if 	is_major(triad):
+		triad_type = "major"
+	elif is_minor(triad):
+		triad_type = "minor"
+	elif is_dim(triad):
+		triad_type = "dim"
+	elif is_aug(triad):
+		triad_type = "aug"
+
+	return triad_type
+
 class Chord:
 
 	scale = {}
@@ -105,7 +139,7 @@ class Chord:
 	chord = None
 
 
-	def __init__(self, scale, jazzy=True):
+	def __init__(self, scale=DEFAULT_SCALE, jazzy=True):
 		self.update_scale(scale)
 		#self.scale_mode = scale if scale in MODE_NAMES else "Ionian"
 		self.jazzy = jazzy
@@ -179,11 +213,11 @@ class Chord:
 		#has_flat = "b" if (deg in [1, 3, 6, 8, 10]) else ""
 		numeral  = MAJOR_MODES[deg]
 
-		if 	 self._is_major(triad):
+		if 	 is_major(triad):
 			return numeral
-		elif self._is_aug(triad):
+		elif is_aug(triad):
 			return numeral + "+"
-		elif self._is_minor(triad) or self._is_dim(triad):
+		elif is_minor(triad) or is_dim(triad):
 			return numeral.lower()
 	
 	def make_triad(self, degree):
@@ -215,7 +249,7 @@ class Chord:
 		#if is minor, prioritize dim7, else minor 7
 		if self.scale["span"][degree] in MINOR_MODES:
 			#is there a dim7? if not, return _2nd_7th_deg
-			can_dim		= self._is_dim(chord) and abs( self.scale["span"][degree] - self.scale["span"[degree-3]])
+			can_dim		= is_dim(chord) and abs( self.scale["span"][degree] - self.scale["span"[degree-3]])
 			o7_deg		= degree-3 if can_dim in [3,9] else (_2nd_7th_deg if _2nd_7th_deg else _7th_deg)
 			nat_7th_note 	= self.scale["span"][o7_deg] 
 		else:
@@ -288,7 +322,7 @@ class Chord:
 			chord_notation += "maj7b5"
 
 		elif left_triad in MINOR_MODES and right_triad in MINOR_MODES:	
-			if	self._is_dim(resolving_chord): # maj7b5
+			if is_dim(resolving_chord): # maj7b5
 				leading_chord.append(leading_chord[0]+12)
 				leading_chord[0] += 1
 				leading_chord[1] += 1
@@ -307,25 +341,11 @@ class Chord:
 		#If the scale doesn't have [(0,), (1, 2), (3, 4), (5,), (6, 7), (8, 9), (10, 11)]
 		# 0 == abs(left_note-right_note)%3 and (left_note, right_note) not in [(1,4), (6,9), (8,11)]
 		
-	def _is_major(self, chord):
-		#intervals are M3 and m3
-		return (chord[1]-chord[0] == 4 and chord[2]-chord[1] == 3)
 	
-	def _is_minor(self, chord):
-		#intervals are m3 and M3
-		return (chord[1]-chord[0] == 3 and chord[2]-chord[1] == 4)
-	
-	def _is_dim(self, chord):
-		#intervals in triad are both m3
-		return (chord[1]-chord[0] == chord[2]-chord[1] == 3)
-
-	def _is_aug(self, chord):
-		#intervals in triad are both m3
-		return (chord[1]-chord[0] == chord[2]-chord[1] == 4)
 
 	def _get_dim_notation(self, chord, _7th):
 		notation = _7th
-		if self._is_dim(chord):
+		if is_dim(chord):
 			if _7th != "":
 				notation = ("o" + _7th) if (chord[3]-chord[2] == 3) else (_7th +"b5")
 		else:

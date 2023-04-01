@@ -31,7 +31,7 @@ midiout.open_virtual_port("LP Extension")
 try:
 	# Set up GridInstrument
 	instrument = GridInstrument()
-	instrument.intro_message = '8==D~'
+	instrument.intro_message = 'Hi'
 	instrument.note_callback = note_callback
 	instrument.launchpad_pro_velocity_multiplier = 2.5
 	instrument.min_velocity = 100
