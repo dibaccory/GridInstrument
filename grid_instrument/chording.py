@@ -145,7 +145,7 @@ class Chord:
 		self.jazzy = jazzy
 
 	#degree = notePositionInScale
-	def __call__(self, degree, ext=[], mod=0, sec=0, inv=0, in_scale=True):
+	def __call__(self, degree, ext=[], mod=0, sec=0, inv=0, in_scale=True, chordie=False):
 		scale_length = len(self.scale["span"])
 		chord = []
 		#if scale_length != 7:
@@ -157,6 +157,15 @@ class Chord:
 
 		#Get triad from scale
 		#NOTE: Getting triad by the scale degree only works of the scale is heptatonic (7 notes)
+
+		if chordie:
+			chord.extend(self.scale["triad"][degree])
+			_7th_notation = self._get_7th(degree, chord, ext)
+			chord_notation	= self.scale["roman"][degree] + self._get_dim_notation(chord, _7th_notation) + "".join(ext)
+			arranged_chord = [chord[0], chord[2], chord[1] + 12, chord[3], chord[2] + 12]
+			print("Playing: ", chord_notation)
+			return arranged_chord
+
 		_7th_notation = ""
 		if in_scale:
 			chord.extend(self.scale["triad"][degree])
@@ -180,7 +189,8 @@ class Chord:
 	def update_scale(self, scale):
 		self.scale = scale
 		self._create_triads()
-		
+
+	#def ??
 
 	def _create_triads(self):
 		scale_length = len(self.scale["span"])
@@ -297,8 +307,9 @@ class Chord:
 		# Maj -> Maj = m7b5
 
 		#Find the notes to the left and right of pressed_note_interval (left_note, right_note)
-		left_note  = next(note for note in reversed(list(enumerate(self.scale["span"]))) if note[1] < pressed_note)
-		right_note = next(note for note in list(enumerate(self.scale["span"])) if note[1] > pressed_note)
+		sp = list(enumerate(self.scale["span"]))
+		left_note  = next(note for note in reversed(sp) if note[1] < pressed_note)
+		right_note = next(note for note in sp if note[1] > pressed_note)
 
 		#if current scale isn't diatonic, we need to check which modal triad is missing
 		#if abs(left_note[1] - right_note[1])%3 == 0 and (left_note[1], right_note[0]) not in [(1,4), (6,9), (8,11)]:

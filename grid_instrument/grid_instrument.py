@@ -7,6 +7,7 @@ import sys
 from .colors import *
 from .layout_maker import *
 from .scales import *
+from .constants import *
 from .chording import Chord
 
 try:
@@ -18,13 +19,15 @@ except ImportError:
 	except ImportError:
 		sys.exit("error loading launchpad.py")
 
-INIT_SCALE = Chord().scale
+
+
+INIT_SCALE = CHORD.scale.copy()
 
 SCALE_NAMES = list(SCALE.keys())
 
 PAD_MODES = {
 	"chord": {
-		"default": PadLayout(CHORD_LAYOUT["default"], "chord", INIT_SCALE, "column")
+		"default": PadLayout(CHORD_LAYOUT["default"], "chord", INIT_SCALE)
 	}
 }
 
@@ -34,6 +37,8 @@ SCALE_POS = [
 	(3,2), (7,2), (8,3), (7,3), 
 	(6,3), (8,2), (8,1), (7,1), 
 	(6,1), (6,2)]
+
+MODE_POS = [ (4,3), (5,3), (4,2), (5,2) ]
 
 SETTINGS = {
 	"key": sorted((
@@ -72,50 +77,13 @@ SETTINGS = {
 		]
 	},
 
-	"mode": ( (4,3), (5,3), (4,2), (5,2) ),
-		#("reset", 	(4,3))
-		#("up", 		(5,3))
-		#("down", 	(4,2))
-		#("fif", 	(5,2))
+	"mode": {#( (4,3), (5,3), (4,2), (5,2) ),
+		"reset":  (4,3),
+		"up": 		(5,3),
+		"down": 	(5,2),
+		"fif":	 	(4,2)
+	},
 	#"layout": [(8,6), (8,7), (8,8)] update to left/right arrows?
-}
-
-
-
-NOTE_COLORS_old = { 
-	"Mk1": { 
-		"note.on": [0, 3],    
-		"note.root": [3, 0],     
-		"note.in_scale": [1, 1],
-		"note.out_scale": [0, 0],
-		"settingsKeyOff": [0, 4],
-		"settingsKeyOn":  [0, 2],
-		"settings.key_off": [1, 1],
-		"settings.key_on":  [3, 3],
-		"settings.scale_off": [0, 1],
-		"settings.scale_on":  [0, 3],
-		"settings.layout_off": [1, 0],
-		"settings.layout_on":  [3, 0],
-
-	}, 
-	"Mk2": { 
-		
-		"note.on": 				[0x3F, 0X3F, 0], 
-		#"note.on.alt": 				[0x1F, 0X1F, 0], 
-		"note.on.chord_root": 	[0x3F, 0X25, 0], 
-		#"note.on.chord_root.alt": 	[0x1F, 0X09, 0], 
-		"note.root": 			[0X20, 0, 0x3F], 
-		"note.in_scale": 		[0X03, 0X01, 10],
-		"note.out_scale":		[0, 0, 0],
-		"settingsKeyOff": 		[0, 0X0A, 0],
-		"settingsKeyOn":  		[0, 0X28, 0],
-		"settings.key_off": 	[0X05, 0, 0],
-		"settings.key_on":  	[0X3F, 0X00, 0],
-		"settings.scale_off": 	[0x01, 0X01, 0X05],
-		"settings.scale_on":  	[0, 0X02, 0X3F],
-		"settings.layout_off": 	[0, 0, 0X0F],
-		"settings.layout_on":	[0, 0, 0X3F],
-	}
 }
 
 #TODO: MidiMatrix
@@ -160,7 +128,9 @@ class GridInstrument:
 	_launchpad_model = None
 	lp = None
 
-	_active_scale = INIT_SCALE
+	_chord_mode = False
+	_chord = CHORD
+	_active_scale = _chord.scale
 	_active_mode = PAD_MODES["chord"]
 	_active_mode_layout = PAD_MODES["chord"]["default"]
 
@@ -180,8 +150,7 @@ class GridInstrument:
 	
 	_launchpad_mode = "notes" #modes: notes, settings, chord
 	_LED_mode = "Pressed" #modes: Pressed, fireworks, pattern by interval?
-	_chord_mode = False
-	_chord = Chord(_active_scale)
+	
 
 	randomButton = None
 	randomButtonCounter = 0
@@ -281,6 +250,24 @@ class GridInstrument:
 							self._active_scale_button_pressed(*name)
 						self._highlight_keys_in_scale()
 
+
+					elif (x,y) in MODE_POS and pressed:
+						mode_inc = 0
+						if (x,y) == SETTINGS["mode"]["reset"]:
+							mode_inc = 0
+						elif (x,y) == SETTINGS["mode"]["up"]:
+							mode_inc = 1
+						elif (x,y) == SETTINGS["mode"]["down"]:
+							mode_inc = -1
+						elif (x,y) == SETTINGS["mode"]["fif"]:
+							if 	 7 in self._active_scale["span"]:
+								mode_inc = self._active_scale["span"].index(7)
+							elif 6 in self._active_scale["span"]:
+								mode_inc = self._active_scale["span"].index(6)
+
+						self._update_scale(mode_inc=mode_inc)
+						
+
 				self._global_func_handler(x,y,pressed)
 
 
@@ -366,11 +353,12 @@ class GridInstrument:
 
 		elif (x,y) == (9,8):
 			if pressed:
+				self._prev_mode = self._launchpad_mode
 				self._launchpad_mode = "settings"
 				self.lp.Reset()
 				self._color_buttons()
 			else:
-				self._launchpad_mode = "notes"
+				self._launchpad_mode = self._prev_mode
 				self._color_buttons()
 
 		elif pressed and (x,y) == (9,6):
@@ -395,8 +383,8 @@ class GridInstrument:
 
 	def _color_mutual_note_pads(self, pad):
 		mutual_pads = [*set(p for note in pad.data for p in self._active_mode_layout.get_pads_by_note(note))]
-		print([p.xy for p in mutual_pads])
-		[self._color_button(*p.xy, p.get_color(pad.pressed)) for p in mutual_pads]
+		
+		[self._color_button(*p.xy, p.get_color(is_active=pad.pressed, is_root=(p.xy[1] == pad.xy[1]))) for p in mutual_pads]
 
 	def _color_button(self, x,y, color):
 		lpX = x - 1
@@ -430,7 +418,6 @@ class GridInstrument:
 			for i, scale_xy in enumerate(SETTINGS["key"]):
 				self._color_button(*scale_xy, NOTE_COLORS["settings"]["key" + ("_selected" if self._scale_key == i else "")] )
 
-
 			for scale_type, scale_list in SETTINGS["scale"].items():
 				for name, scale_xy in scale_list:
 					if self._active_scale["name"] == name:
@@ -438,6 +425,11 @@ class GridInstrument:
 					else:
 						self._color_button(*scale_xy, NOTE_COLORS["settings"]["scale"][scale_type])
 			
+			self._color_button(*SETTINGS["mode"]["reset"], Color.GREEN) 
+			self._color_button(*SETTINGS["mode"]["fif"], 	Color.BLUE) 
+			self._color_button(*SETTINGS["mode"]["up"], 	Color.WHITE) 
+			self._color_button(*SETTINGS["mode"]["down"], 	Color.WHITE) 
+
 		self._color_button(9, 6, NOTE_COLORS["note"]["on"]) # octave up
 		self._color_button(9, 5, NOTE_COLORS["note"]["on"]) # octave down
 		self._color_button(9, 8, NOTE_COLORS["note"]["on"]) # settings
@@ -520,9 +512,7 @@ class GridInstrument:
 			[usr_pad.data.append(pad.data[0]) if pad.data[0] not in usr_pad.data else usr_pad.data.remove(pad.data[0]) for usr_pad in self._active_mode_layout.get_pressed_pads("user")]
 		
 		if pad.type in ["note", "chord", "user"]:
-
 			#if [], then it won't play anything
-			
 			[(self._note_on(note, velocity)) for note in pad.data]
 			self._color_mutual_note_pads(pad)
 		elif pad.type == "sustain":
@@ -554,9 +544,7 @@ class GridInstrument:
 		if button_number not in self._pressed_buttons:
 			return
 		
-		self._pressed_buttons.remove(button_number)
-
-		pad = self._active_mode_layout.get_pad(x, y)
+		pad = self._active_mode_layout.get_pad(x, y)	
 		pad.pressed = False
 
 		if pad.type in ["note", "chord", "user"]:
@@ -565,7 +553,7 @@ class GridInstrument:
 				return
 			#if [], then it won't play anything
 			all_pressed_pad_notes = self._active_mode_layout.get_notes_for_pressed_pads()
-			[(self._note_off(note)) for note in pad.data if note not in all_pressed_pad_notes]
+			[(self._note_off(note))  for note in pad.data if note not in all_pressed_pad_notes]
 			self._color_mutual_note_pads(pad)
 		elif pad.type == "sustain":
 			pad.toggle()
@@ -576,6 +564,9 @@ class GridInstrument:
 
 		elif pad.type == "lock":
 			pad.toggle()
+
+		
+		self._pressed_buttons.remove(button_number)
 
 		self._color_button(*pad.xy, pad.get_color())
 
@@ -716,7 +707,7 @@ class GridInstrument:
 		self._pressed_chords = [[]] * self._XY_to_grid_index(8,8)
 
 
-	def _update_scale(self, name=None, mode=0):
+	def _update_scale(self, name=None, mode_inc=None):
 		if name is not None:
 			self._active_scale["name"] = name
 			self._active_scale["span"] = SCALE[self._active_scale["name"]]
@@ -726,14 +717,18 @@ class GridInstrument:
 			self.SCALE_LAYOUT[1] = len(self._active_scale["span"])
 			print("new scale: ", self._active_scale["span"])
 
-		if mode > 0:
-			self._active_scale["mode"] += mode #update scale mode 		(self.scale_mode)
-			mode_interval = self._active_scale["mode"]
-			rotated_scale = self._active_scale["span"][-mode:] + self._active_scale["span"][:-mode]
-			self._active_scale["span"] = [ (x+12 - mode_interval)%12 for x in rotated_scale ]
-			print(rotated_scale)
+		if mode_inc is not None:
+			#new_scale = {"name": self.scale["name"], "mode": 0, "span": []}
+			if mode_inc != 0:
+				shifted_span = self._active_scale["span"][mode_inc:] + self._active_scale["span"][:mode_inc]
+				self._active_scale["mode"] += mode_inc
+				self._active_scale["span"] = [(interval - shifted_span[0])%12 for interval in shifted_span]
+			else:
+				self._active_scale["mode"] = 0
+				self._active_scale["span"] = SCALE[self._active_scale["name"]]
 
 		self._chord.update_scale(self._active_scale)
+		self._active_mode_layout.update_scale(self._active_scale)
 		#print(self._active_scale)
 
 	def _active_scale_button_pressed(self, name):

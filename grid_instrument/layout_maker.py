@@ -1,6 +1,7 @@
 from itertools import product
 from .colors import *
 from .chording import *
+from .constants import *
 
 CHORD_LAYOUT = {
 	"default": (
@@ -15,7 +16,7 @@ CHORD_LAYOUT = {
 		("scale", 2, 1),
 		("scale", 6, 0),
 		("scale", 4, 1),
-		("chord", ("I", "ii", "iii", "IV", "V", "vi", "vii")),
+		("chord", 0),
 		("user", (
 			(7,2), (7,3), (7,4), (7,5), (7,6), (7,7), (7,8), 
 			(8,2), (8,3), (8,4), (8,5), (8,6), (8,7), (8,8) 
@@ -26,9 +27,9 @@ CHORD_LAYOUT = {
 	"chord_map": (
 	
 		#5, 6, 7, [1] | [5], 4 3 2
-		("chord", ("V", "vi", "vii", "I", "V", "IV", "iii", "ii")), #COL 4
+		("roman", ("V", "vi", "vii", "I", "V", "IV", "iii", "ii")), #COL 4
 		#mode 5 (Aeolian): 5, 6, 7, [1] | [5], 4 3 2
-		("chord", ("v", "bVI", "bVII", "I", "v", "IV", "bIII", "ii")), #COL 5
+		("roman", ("v", "bVI", "bVII", "I", "v", "IV", "bIII", "ii")), #COL 5
 
 	),
 }
@@ -55,6 +56,10 @@ class PadLayout:
 		self.scale = scale
 		self.direction = direction
 		self._build()
+	
+	def update_scale(self, scale):
+		self.scale = scale
+		self._build()
 
 	def _build(self):
 		if self.kind == "chord":
@@ -71,8 +76,14 @@ class PadLayout:
 						
 				elif	s[0] == "chord":
 					for j in range(8):
-						self.info[8*i + j] = Pad("chord", [ t + 12*(j//n) for t in TRIAD[s[1][j%n]] ], (i+1,j+1), Color.ORANGE)
-
+						#TODO: make chord based on roman numeral notation. right now just gets corresponding scale triad
+						chord = CHORD((j+s[1])%n, chordie=True)
+						adj_chord = [note + 12*((j+s[1])//n) for note in chord]
+						self.info[8*i + j] = Pad("chord", adj_chord, (i+1,j+1), Color.ORANGE)
+				elif	s[0] == "roman":
+					for j in range(8):
+						chord_by_numeral = [ t + 12*(j//n) for t in self.scale["triad"][self.scale["roman"].index(s[1][j%n])] ]
+						self.info[8*i + j] = Pad("chord", chord_by_numeral, (i+1,j+1), Color.ORANGE)
 				elif	s[0] == "ext":
 					x,y = s[1]
 					i,j = (x-1, y-1)
@@ -103,7 +114,7 @@ class PadLayout:
 		if self.direction == "row":
 			self.info = [ self.info[8*j + i] for i,j in product(range(8),range(8)) ]
 
-		print([str(pad) for pad in self.info])
+		#print([str(pad) for pad in self.info])
 
 	def get_pad(self, x, y):
 		return self.info[8*(x-1) + (y-1)]
@@ -128,6 +139,10 @@ class PadLayout:
 		pressed_pads = self.get_pressed_pads(ignore=["ext", "inv",  "lock", "sustain"])
 		return [*set([note for pad in pressed_pads for note in pad.data])]
 	
+	def get_active_pads(self):
+		pressed_pads_notes = self.get_notes_for_pressed_pads()
+	#	[*set([pad. for note in pressed_pads_notes for pad in self.get_pads_by_note(note))]
+	
 	#def is_pad_active(self, pad):
 	#	return ( pad in self.get_pads_by_note( ) ) or ( pad.data and isinstance(pad.data, bool) )
 
@@ -144,15 +159,15 @@ class Pad:
 	def __str__(self):
 		return "(" + str(self.type) + ", " + str(self.data) + ", " + str(self.color) + ")"
 	
-	def get_color(self, is_active=False):
+	def get_color(self, is_active=False, is_root=False):
 		color = self.color
 
 		if isinstance(self.data, bool):
 			color = Color.invert(self.color) if self.data else self.color
-		elif self.pressed:
-			color = Color.invert(self.color)
 		elif self.type == "note" and is_active:
-			color = Color.add(Color.RED, -0X10)
+			color = Color.add(Color.RED, -0X07)	
+		if self.pressed or (is_active and is_root):
+			color = Color.add(Color.YELLOW, -0X07)	
 		
 		return color
 	

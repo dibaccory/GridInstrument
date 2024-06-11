@@ -20,6 +20,9 @@ class Color:
 
 	def invert(RGB):
 		return [(0X3F - v) for v in RGB]
+	
+	def high_contrast(RGB):
+		return [max(0X00, max(0X3F, v)) for v in RGB]
 
 
 NOTE_COLORS = {
